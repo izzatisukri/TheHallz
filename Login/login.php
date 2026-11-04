@@ -1,0 +1,334 @@
+<?php
+session_start();
+
+include('db_connection.php');
+
+$error_message = "";
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $email = mysqli_real_escape_string($conn, $_POST['email']);
+    $password = $_POST['password'];
+    $role = mysqli_real_escape_string($conn, $_POST['role']);
+
+    if ($role === 'client') {
+        $query = "SELECT * FROM client WHERE client_email = '$email'";
+        $result = mysqli_query($conn, $query);
+        
+        if ($row = mysqli_fetch_assoc($result)) {
+            if (password_verify($password, $row['client_password'])) {
+                
+                $status = isset($row['client_status']) ? $row['client_status'] : (isset($row['status']) ? $row['status'] : 'Active');
+                if (strtolower(trim($status)) === 'suspended') {
+                    $error_message = "Your account has been suspended!";
+                } else {
+                    $_SESSION['client_id'] = $row['client_id'];
+                    $_SESSION['role'] = 'client';
+                    $_SESSION['user_name'] = $row['client_name'];
+                    
+                    header("Location: client.php");
+                    exit();
+                }
+                
+            } else {
+                $error_message = "Incorrect password for Client account!";
+            }
+        } else {
+            $error_message = "Email not found in Client records!";
+        }
+    }
+
+    elseif ($role === 'venue_owner') {
+        $query = "SELECT * FROM venue_owner WHERE owner_email = '$email'";
+        $result = mysqli_query($conn, $query);
+        
+        if ($row = mysqli_fetch_assoc($result)) {
+            if (password_verify($password, $row['owner_password'])) {
+                
+                $status = isset($row['owner_status']) ? $row['owner_status'] : (isset($row['status']) ? $row['status'] : 'Active');
+                if (strtolower(trim($status)) === 'suspended') {
+                    $error_message = "Your account has been suspended! Please contact admin.";
+                } else {
+                    $_SESSION['owner_id'] = $row['owner_id'];
+                    $_SESSION['role'] = 'venue_owner';
+                    $_SESSION['user_name'] = $row['owner_name'];
+                    header("Location: venue_owner.php");
+                    exit();
+                }
+                
+            } else {
+                $error_message = "Incorrect password for Venue Owner account!";
+            }
+        } else {
+            $error_message = "Email not found in Venue Owner records!";
+        }
+    }
+    
+    elseif ($role === 'admin') {
+        $query = "SELECT * FROM admin WHERE admin_email = '$email'";
+        $result = mysqli_query($conn, $query);
+        
+        if ($row = mysqli_fetch_assoc($result)) {
+            if (password_verify($password, $row['admin_password'])) {
+                $_SESSION['user_id'] = $row['admin_id'];
+                $_SESSION['role'] = 'admin';
+                $_SESSION['user_name'] = $row['admin_name'];
+                
+                header("Location: admin_dashboard.php");
+                exit();
+            } else {
+                $error_message = "Incorrect password for Admin account!";
+            }
+        } else {
+            $error_message = "Email not found in Admin records!";
+        }
+    }
+}
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Account</title>
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background: radial-gradient(circle at center, #7d0552 0%, #520131 70%, #2b0019 100%); 
+    height: 100vh; 
+    width: 100vw;
+    display: flex;
+    align-items: center; 
+    justify-content: center;
+    overflow: hidden; 
+    padding: 20px;
+}
+
+.container {
+    text-align: center;
+    width: 100%;
+    max-width: 580px; 
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.logo-container {
+    margin-bottom: 8px;
+    width: 100%;
+    animation: fadeInDown 0.8s ease-out;
+}
+
+.logo {
+    width: 100%;
+    max-width: 220px; 
+    height: auto;
+    display: block;
+    margin: 0 auto;
+    filter: drop-shadow(0px 4px 8px rgba(255, 255, 255, 0.1));
+}
+
+.title {
+    color: #ffffff;
+    font-size: 26px;
+    margin: 5px 0 25px 0; 
+    font-weight: 600; 
+    letter-spacing: 0.8px;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    animation: fadeInDown 0.8s ease-out;
+}
+
+.form-card {
+    background-color: #DCDCDC;
+    border: 1px solid #DCDCDC;
+    border-radius: 24px; 
+    padding: 35px 45px;
+    text-align: left;
+    box-shadow: 
+        0px 4px 6px -1px rgba(0, 0, 0, 0.1),
+        0px 20px 40px -10px rgba(0, 0, 0, 0.4);
+    width: 100%;
+    animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.form-group {
+    margin-bottom: 18px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 13.5px; 
+    color: #2c2c2c;
+    margin-bottom: 8px; 
+    font-weight: bold;
+    letter-spacing: 0.3px;
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 13px 16px; 
+    border: 1.5px solid #e2e8f0; 
+    border-radius: 10px; 
+    font-size: 14.5px;
+    color: #1a1a1a;
+    background-color: #f8fafc; 
+    outline: none;
+    font-family: inherit; 
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    border-color: #710349;
+    background-color: #ffffff;
+    box-shadow: 0 0 0 4px rgba(113, 3, 73, 0.15);
+}
+
+.form-group select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg fill='%23710349' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/><path d='M0 0h24v24H0z' fill='none'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 16px center;
+    background-size: 20px;
+    padding-right: 45px;
+}
+
+.form-group input::placeholder {
+    color: #94a3b8;
+    font-size: 13.5px;
+}
+
+.alert-danger {
+    background-color: #f8d7da;
+    color: #721c24;
+    padding: 12px;
+    border-radius: 10px;
+    margin-bottom: 15px;
+    font-size: 14px;
+    border: 1px solid #f5c6cb;
+    font-weight: 500;
+}
+
+.btn-login {
+    width: 100%;
+    background-color: #710349;
+    color: white;
+    border: none;
+    border-radius: 10px; 
+    padding: 14px; 
+    font-size: 15px;
+    cursor: pointer;
+    text-transform: uppercase;
+    margin-top: 8px;
+    margin-bottom: 18px; 
+    letter-spacing: 2px;
+    font-weight: bold;
+    box-shadow: 0 4px 12px rgba(113, 3, 73, 0.3);
+    transition: all 0.2s ease;
+}
+
+.btn-login:hover {
+    background-color: #540236;
+    box-shadow: 0 6px 20px rgba(113, 3, 73, 0.4);
+    transform: translateY(-1px);
+}
+
+.btn-login:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 8px rgba(113, 3, 73, 0.4);
+}
+
+.footer-links {
+    text-align: center;
+    font-size: 13.5px;
+    color: #64748b;
+}
+
+.footer-links a {
+    color: #710349;
+    text-decoration: none;
+    font-weight: bold;
+    transition: color 0.2s ease;
+}
+
+.footer-links a.register-accent {
+    color: #710349;
+    position: relative;
+}
+
+.footer-links a:hover {
+    color: #4a002a;
+    text-decoration: underline;
+}
+
+.footer-links .separator {
+    margin: 0 10px;
+    color: #cbd5e1;
+}
+
+@keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-15px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+</style>
+
+</head>
+<body>
+    <div class="container">
+        <div class="logo-container">
+            <img src="images/wedding_logo.png" alt="Wedding Logo" class="logo">
+        </div>
+
+        <h2 class="title">Login to Your Account</h2>
+
+        <div class="form-card">
+            <?php if (!empty($error_message)): ?>
+                <div class="alert-danger"><?php echo $error_message; ?></div>
+            <?php endif; ?>
+
+            <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="POST" id="loginForm">
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" name="email" placeholder="customer@gmail.com" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="role">Login As</label>
+                    <select id="role" name="role" required>
+                        <option value="" disabled selected>Select Your Role</option>
+                        <option value="client">Client</option>
+                        <option value="venue_owner">Venue Owner</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn-login">LOGIN</button>
+
+                <div class="footer-links">
+                    <a href="reset.php">Forgot Password</a>
+                    <span class="separator">|</span>
+                    <span>Don't have an account? <a href="register.php" class="register-accent">Register here</a></span>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

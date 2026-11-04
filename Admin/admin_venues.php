@@ -1,0 +1,821 @@
+<?php
+include('db_connection.php');
+
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action_admin'])) {
+    $target_venue_id = mysqli_real_escape_string($conn, $_POST['venue_id']);
+    $action_type = mysqli_real_escape_string($conn, $_POST['action_admin']);
+    
+    $update_query = "UPDATE venue SET venue_status = '$action_type' WHERE venue_id = '$target_venue_id'";
+    mysqli_query($conn, $update_query);
+    
+    $toast_backend_message = "Venue status successfully updated to " .
+    ucfirst($action_type) . "!";
+}
+
+$query = "SELECT v.*, vo.owner_name, a.admin_id 
+          FROM venue v
+          LEFT JOIN venue_owner vo ON v.owner_id = vo.owner_id
+          LEFT JOIN admin a ON v.admin_id = a.admin_id";
+$result = mysqli_query($conn, $query);
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - All Venues</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+body {
+    background-color: #f4f5f7;
+    color: #2d3748;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+}
+
+.container {
+    width: 100%;
+    padding-bottom: 60px;
+}
+
+.header {
+    background-color: #ffffff;
+    padding: 24px 5%;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+}
+
+.logo-area {
+    font-size: 24px;       
+    font-weight: 700;
+    color: #4a042e;
+    letter-spacing: -0.5px;
+}
+
+.nav-links {
+    display: flex;
+    justify-content: center;
+    gap: 25px;
+}
+
+.nav-links a {
+    text-decoration: none;
+    color: #718096;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 6px 4px 12px 4px;
+    transition: color 0.2s ease, border-color 0.2s ease;
+    border-bottom: 3px solid transparent;
+}
+
+.nav-links a:hover {
+    color: #710349;
+}
+
+.nav-links a.active {
+    color: #710349;
+    border-bottom: 3px solid #710349;
+}
+
+.nav-links a.logout {
+    color: #e53e3e;
+}
+
+.nav-links a.logout:hover {
+    color: #c53030;
+}
+
+.welcome-banner {
+    background: linear-gradient(135deg, #710349 0%, #4a042e 100%);
+    color: white;
+    margin: 40px auto 25px auto;
+    padding: 40px;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 1200px;
+    box-shadow: 0 4px 20px rgba(113, 3, 73, 0.15);
+    text-align: center;
+}
+
+.welcome-banner h2 {
+    font-size: 26px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    letter-spacing: -0.5px;
+}
+
+.welcome-banner p {
+    font-size: 15px;
+    color: #f7fafc;
+    opacity: 0.85;
+}
+
+.content-section {
+    background-color: #ffffff;
+    color: #2d3748;
+    margin: 0 auto;
+    padding: 35px;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 1200px;
+    position: relative;
+    min-height: 320px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    border: 1px solid #edf2f7;
+    animation: fadeIn 0.3s ease;
+}
+
+.content-section.active-section {
+    display: block;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1;
+    transform: translateY(0); }
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #edf2f7;
+}
+
+.section-title-container {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.title-inline-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.package-select {
+    padding: 6px 12px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #4a5568;
+    background-color: #ffffff;
+    border: 1px solid #cbd5e0;
+    border-radius: 6px;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+.package-select:focus {
+    border-color: #710349;
+}
+
+.section-header h3 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #1a202c;
+}
+
+.sub-nav {
+    display: flex;
+    gap: 20px;
+}
+
+.sub-nav span {
+    font-size: 14px;
+    font-weight: 500;
+    color: #718096;
+    cursor: pointer;
+    padding-bottom: 4px;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.sub-nav span:hover {
+    color: #710349;
+}
+
+.sub-nav span.active-sub {
+    color: #1a202c;
+    font-weight: 600;
+    border-bottom: 2px solid #1a202c;
+}
+
+.chart-container {
+    display: none;
+    width: 100%;
+    overflow-x: auto;
+    margin: 20px auto;
+    padding-bottom: 15px;
+}
+
+.chart-inner {
+    min-width: 600px;
+    height: 350px;
+    position: relative;
+}
+
+.btn-delete {
+    background-color: #fff5f5;
+    color: #e53e3e;
+    border: 1px solid #fed7d7;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+    transition: all 0.2s ease;
+}
+
+.btn-delete:hover {
+    background-color: #e53e3e;
+    color: white;
+}
+
+.btn-view {
+    background-color: #f7fafc;
+    color: #4a5568;
+    border: 1px solid #e2e8f0;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 12px;
+    transition: all 0.2s ease;
+}
+.btn-view:hover {
+    background-color: #edf2f7;
+    color: #1a202c;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 15px;
+}
+
+th, td {
+    padding: 16px 18px;
+    border-bottom: 1px solid #edf2f7;
+}
+
+th {
+    font-weight: 600;
+    color: #718096;
+    background-color: #f7fafc;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+td {
+    color: #4a5568;
+}
+
+tr:hover td {
+    background-color: #fcfcfd;
+}
+
+td:last-child {
+    white-space: nowrap;
+}
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(26, 32, 44, 0.4);
+    backdrop-filter: blur(4px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    display: none;
+}
+
+.modal-box-delete {
+    background-color: #ffffff;
+    width: 90%;
+    border-radius: 16px;
+    padding: 35px;
+    color: #1a202c;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    border: 1px solid #e2e8f0;
+    animation: modalSlideUp 0.3s ease;
+    max-width: 440px; 
+    text-align: center;
+}
+
+@keyframes modalSlideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1;
+    transform: translateY(0); }
+}
+
+.form-actions {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 30px;
+}
+
+.btn-cancel {
+    background-color: #ffffff;
+    color: #4a5568;
+    border: 1px solid #cbd5e0;
+    padding: 11px 28px;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-cancel:hover {
+    background-color: #f7fafc;
+    color: #1a202c;
+}
+
+.modal-box-delete p {
+    font-size: 16px;
+    color: #4a5568;
+    margin-bottom: 25px;
+}
+
+.btn-confirm-ok {
+    background-color: #e53e3e;
+    color: #ffffff;
+    border: none;
+    padding: 11px 28px;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.btn-confirm-ok:hover {
+    background-color: #c53030;
+}
+
+.btn-confirm-logout {
+    background-color: #e53e3e;
+    color: #ffffff;
+    border: none;
+    padding: 11px 28px;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.btn-confirm-logout:hover {
+    background-color: #e53e3e;
+}
+
+.toast-notification {
+    position: fixed;
+    bottom: 25px;
+    right: 25px;
+    background-color: #2f855a;
+    color: white;
+    padding: 14px 28px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    z-index: 1010;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.toast-notification.show-toast {
+    visibility: visible;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.select-approved {
+    background-color: #e6fffa !important;
+    color: #2f855a !important;
+    border-color: #b2f5ea !important;
+}
+
+.select-rejected {
+    background-color: #fff5f5 !important;
+    color: #e53e3e !important;
+    border-color: #fed7d7 !important;
+}
+
+.select-pending {
+    background-color: #fefcbf !important;
+    color: #b7791f !important;
+    border-color: #fef3c7 !important;
+}
+
+.modal-box-view-image {
+    background-color: #ffffff;
+    width: 90%;
+    max-width: 650px;
+    border-radius: 16px;
+    padding: 25px;
+    text-align: center;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    animation: fadeIn 0.4s ease-out;
+    position: relative;
+}
+
+.modal-box-view-image h4 {
+    font-size: 18px;
+    margin-bottom: 15px;
+    color: #1a202c;
+    font-weight: 500;
+}
+
+.modal-box-view-image img {
+    max-width: 100%;
+    max-height: 60vh;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    object-fit: contain;
+    margin-bottom: 15px;
+}
+
+.modal-box-view-image p {
+    margin: 15px 0;
+    font-size: 14px;
+    color: #4a5568;
+}
+
+.nav-arrow {
+    position: absolute;
+    top: 40%;
+    transform: translateY(-50%);
+    background: #710349;
+    color: white;
+    border: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+}
+
+.prev-arrow { left: 10px; }
+.next-arrow { right: 10px; }
+
+.btn-close-purple {
+    background-color: #710349;
+    color: #ffffff;
+    border: none;
+    padding: 11px 28px;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <div class="logo-area">🌸 Wedding Hall Management - Admin Panel</div>
+        <div class="nav-links">
+            <a href="admin_dashboard.php">Dashboard</a>
+            <a href="admin_venues.php" class="active">Venues</a>
+            <a href="admin_packages.php">Packages</a>
+            <a href="admin_users.php">Users</a>
+            <a href="admin_bookings.php">Bookings</a>
+            <a class="logout" onclick="openModal('modal-logout-confirmation', this)">Log out</a>
+        </div>
+    </div>
+
+    <div class="welcome-banner">
+        <h2>Welcome, Admin! 👑</h2>
+        <p>Manage users, venues and generate reports.</p>
+    </div>
+
+    <div class="content-section" style="display: block;">
+        <div class="section-header">
+            <div class="section-title-container">
+                <div class="title-inline-container">
+                    <h3>All Venues</h3>
+                </div>
+                <div class="sub-nav">
+                    <span id="sub-chart" onclick="toggleView('chart')">Chart</span>
+                    <span id="sub-list" class="active-sub" onclick="toggleView('list')">List</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-chart" class="chart-container">
+            <div class="chart-inner">
+                <canvas id="venueOwnerChart"></canvas>
+            </div>
+        </div>
+
+        <div id="view-list" style="display: block;">
+            <table id="table-venues">
+                <thead>
+                    <tr>
+                         <th>Owner Name</th>
+                        <th>Venue Name</th>
+                        <th>Full Address</th>
+                        <th>Capacity</th>
+                         <th>Venues Images</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                 <tbody>
+                    <?php
+                    if (mysqli_num_rows($result) > 0) {
+                         while ($row = mysqli_fetch_assoc($result)) {
+                            $venue_id = $row['venue_id'];
+                            $owner_name = htmlspecialchars($row['owner_name']);
+                            $venue_name = htmlspecialchars($row['venue_name']);
+                            $venue_location = htmlspecialchars($row['venue_location']);
+                            $venue_capacity = number_format($row['venue_capacity']);
+                            $venue_image = htmlspecialchars($row['venue_image']);
+                            $venue_status = isset($row['venue_status']) ? strtolower($row['venue_status']) : 'pending';
+
+if ($venue_status == 'rejected') {
+    $status_class = 'select-rejected';
+} elseif ($venue_status == 'pending') {
+    $status_class = 'select-pending';
+} else {
+    $status_class = 'select-approved';
+}
+                    ?>
+                    <tr data-package="basic">
+                        <td><?php echo $owner_name; ?></td>
+                        <td><?php echo $venue_name; ?></td>
+                        <td><?php echo $venue_location; ?></td>
+                        <td><?php echo $venue_capacity; ?></td>
+                        <td>
+                            <button class="btn-view" onclick="openImageModal(['images/<?php echo $venue_image; ?>'], '<?php echo $venue_name; ?>')">View</button>
+                        </td>
+                        <td>
+                             <form action="" method="POST" id="form-status-<?php echo $venue_id; ?>" style="margin:0; padding:0;">
+                                <input type="hidden" name="venue_id" value="<?php echo $venue_id; ?>">
+                               <select name="action_admin" class="package-select <?php echo $status_class; ?>" style="font-weight: 600;" onchange="submitStatusForm('<?php echo $venue_id; ?>', this)">
+                                    <option value="pending" class="select-pending" <?php if($venue_status == 'pending') echo 'selected'; ?>>Pending</option>
+                                    <option value="approved" class="select-approved" <?php if($venue_status == 'approved') echo 'selected'; ?>>Approved</option>
+                                    <option value="rejected" class="select-rejected" <?php if($venue_status == 'rejected') echo 'selected'; ?>>Rejected</option>
+                                </select>
+                            </form>
+                        </td>
+                    </tr>
+                    <?php
+                         }
+                    } else {
+                        echo "<tr><td colspan='6' style='text-align:center;'>No venues found in database.</td></tr>";
+                    }
+                    ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="toast-notification" id="toast-global"></div>
+
+<div id="modal-view-image" class="modal-overlay">
+    <div class="modal-box-view-image">
+        <h4 id="img-title">Venue Pictures</h4>
+        <img id="img-gallery-placeholder" src="" alt="Image">
+         <p id="img-counter">Picture 1 of 2</p>
+        <button id="btn-prev" class="nav-arrow prev-arrow" onclick="changeImage(-1)">&#10094;</button>
+        <button id="btn-next" class="nav-arrow next-arrow" onclick="changeImage(1)">&#10095;</button>
+        <button class="btn-close-purple" onclick="closeModal('modal-view-image')">Close</button>
+    </div>
+</div>
+
+<div id="modal-delete-confirmation" class="modal-overlay">
+    <div class="modal-box-delete">
+        <p>Are you sure you want to delete this venue? This action cannot be undone.</p>
+        <div class="form-actions" style="justify-content: center; margin-top: 0;">
+            <button type="button" class="btn-cancel" style="padding: 10px 24px;" onclick="closeModal('modal-delete-confirmation')">Cancel</button>
+            <button type="button" class="btn-confirm-ok" id="btn-confirm-delete-action">Delete</button>
+        </div>
+    </div>
+</div>
+
+<div id="modal-logout-confirmation" class="modal-overlay">
+    <div class="modal-box-delete">
+        <p>Are you sure you want to log out? You will need to login again to access the panel.</p>
+        <div class="form-actions" style="justify-content: center; margin-top: 0;">
+            <button type="button" class="btn-cancel" style="padding: 10px 24px;" onclick="closeModal('modal-logout-confirmation')">Cancel</button>
+            <button type="button" class="btn-confirm-logout" id="btn-confirm-logout-action">Log Out</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let rowToDelete = null;
+    let myBarChart = null; 
+    let currentImages = [];
+    let currentIdx = 0;
+    function submitStatusForm(venueId, selectElement) {
+        updateDropdownColor(selectElement);
+        document.getElementById('form-status-' + venueId).submit();
+    }
+
+    function updateDropdownColor(selectElement) {
+    if (selectElement.value === 'approved') {
+        selectElement.className = 'package-select select-approved';
+    } else if (selectElement.value === 'rejected') {
+        selectElement.className = 'package-select select-rejected';
+    } else if (selectElement.value === 'pending') {
+        selectElement.className = 'package-select select-pending';
+    } else {
+        selectElement.className = 'package-select';
+    }
+}
+
+    function openImageModal(imageArray, title) {
+        currentImages = imageArray;
+        currentIdx = 0;
+        document.getElementById('img-title').textContent = title;
+        document.getElementById('img-gallery-placeholder').src = currentImages[currentIdx];
+        document.getElementById('img-counter').textContent = `Picture ${currentIdx + 1} of ${currentImages.length}`;
+        
+        document.getElementById('btn-prev').style.display = 'flex';
+        document.getElementById('btn-next').style.display = 'flex';
+        
+        document.getElementById('modal-view-image').style.display = 'flex';
+    }
+
+    function changeImage(step) {
+        currentIdx += step;
+        if (currentIdx < 0) currentIdx = currentImages.length - 1;
+        if (currentIdx >= currentImages.length) currentIdx = 0;
+        document.getElementById('img-gallery-placeholder').src = currentImages[currentIdx];
+        document.getElementById('img-counter').textContent = `Picture ${currentIdx + 1} of ${currentImages.length}`;
+    }
+
+    function toggleView(viewType) {
+        const chartView = document.getElementById('view-chart');
+        const listView = document.getElementById('view-list');
+        const subChart = document.getElementById('sub-chart');
+        const subList = document.getElementById('sub-list');
+        if (viewType === 'chart') {
+            chartView.style.display = 'block';
+            listView.style.display = 'none';
+            subChart.classList.add('active-sub');
+            subList.classList.remove('active-sub');
+            renderBarChart(); 
+        } else {
+            chartView.style.display = 'none';
+            listView.style.display = 'block';
+            subChart.classList.remove('active-sub');
+            subList.classList.add('active-sub');
+        }
+    }
+
+    function renderBarChart() {
+        const rows = document.querySelectorAll('#table-venues tbody tr');
+        const ownerCounts = {};
+
+        rows.forEach(row => {
+            if (row.style.display !== 'none' && row.cells.length > 1) {
+                const ownerName = row.cells[0].textContent.trim(); 
+                ownerCounts[ownerName] = (ownerCounts[ownerName] || 0) + 1;
+            }
+        });
+        const labels = Object.keys(ownerCounts);
+        const data = Object.values(ownerCounts);
+
+        if (myBarChart) {
+            myBarChart.destroy();
+        }
+
+        if (labels.length === 0) {
+            return;
+        }
+
+        const dynamicWidth = Math.max(600, labels.length * 80);
+        document.querySelector('.chart-inner').style.width = dynamicWidth + 'px';
+
+        const ctx = document.getElementById('venueOwnerChart').getContext('2d');
+        myBarChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Number of halls',
+                    data: data,
+                    backgroundColor: '#710349',
+                    borderColor: '#4a042e',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    title: { display: true, text: 'Number of Halls by Owner' }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+             }
+        });
+    }
+
+    function openModal(modalId, buttonElement) {
+        document.getElementById(modalId).style.display = 'flex';
+        if (modalId === 'modal-delete-confirmation') {
+            rowToDelete = buttonElement.closest('tr');
+            const confirmBtn = document.getElementById('btn-confirm-delete-action');
+            confirmBtn.setAttribute('onclick', "confirmDelete('Venue Deleted Successfully!')");
+        }
+
+        if (modalId === 'modal-logout-confirmation') {
+            const confirmLogoutBtn = document.getElementById('btn-confirm-logout-action');
+            confirmLogoutBtn.setAttribute('onclick', "confirmLogout()");
+        }
+    }
+
+    function closeModal(modalId) {
+        document.getElementById(modalId).style.none = 'none';
+        document.getElementById(modalId).style.display = 'none';
+    }
+
+    function confirmDelete(message) {
+        if (rowToDelete) {
+            rowToDelete.remove();
+            rowToDelete = null;
+        }
+        closeModal('modal-delete-confirmation');
+        triggerToast(message);
+        if (document.getElementById('view-chart').style.display === 'block') {
+            renderBarChart();
+        }
+    }
+
+    function confirmLogout() {
+        window.location.href = 'login.php';
+    }
+
+    function triggerToast(message) {
+        const toast = document.getElementById('toast-global');
+        if (toast) {
+            toast.textContent = message;
+            toast.classList.add('show-toast');
+            setTimeout(() => {
+                toast.classList.remove('show-toast'); 
+            }, 3000);
+        }
+    }
+
+    window.onclick = function(event) {
+        if (event.target.classList.contains('modal-overlay')) {
+            event.target.style.display = 'none';
+        }
+    }
+
+    <?php if(isset($toast_backend_message) && !empty($toast_backend_message)): ?>
+        window.addEventListener('DOMContentLoaded', () => {
+            triggerToast("<?php echo $toast_backend_message; ?>");
+        });
+    <?php endif; ?>
+</script>
+
+</body>
+</html>

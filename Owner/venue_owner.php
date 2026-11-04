@@ -113,101 +113,212 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Venue Owner Panel</title>
+    <!-- Google Fonts & Font Awesome Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
+        :root {
+            --primary-burgundy: #7a224f;
+            --primary-dark: #581637;
+            --accent-pink: #fce4ec;
+            --badge-pink: #f8bbd0;
+            --bg-page: #f9f6f8;
+            --text-dark: #2d3748;
+            --text-muted: #718096;
+            --border-color: #f0e6eb;
+            --white: #ffffff;
+            --radius-lg: 20px;
+            --radius-md: 14px;
+            --radius-sm: 8px;
+            --shadow-soft: 0 10px 30px rgba(122, 34, 79, 0.05);
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
         }
 
         body {
-            background-color: #f4f5f7;
-            color: #2d3748;
+            background-color: var(--bg-page);
+            color: var(--text-dark);
             min-height: 100vh;
             -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 120px;
+            background: linear-gradient(180deg, rgba(253, 237, 244, 0) 0%, rgba(248, 187, 208, 0.3) 100%);
+            z-index: -1;
+            pointer-events: none;
         }
 
         .container {
             width: 100%;
-            padding-bottom: 60px;
+            max-width: 1300px;
+            margin: 0 auto;
+            padding: 0 20px 60px 20px;
         }
 
         .header {
-            background-color: #ffffff;
-            padding: 24px 5%;
-            border-bottom: 1px solid #e2e8f0;
+            background-color: var(--white);
+            padding: 16px 35px;
+            margin: 0 -20px 25px -20px;
+            border-bottom: 1px solid var(--border-color);
             display: flex;
-            flex-direction: column;
+            justify-content: space-between;
             align-items: center;
-            gap: 16px;
+            position: relative;
+        }
+
+        .header::after {
+            content: '🌸🍃';
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            opacity: 0.15;
+            font-size: 28px;
+            pointer-events: none;
         }
 
         .logo-area {
-            font-size: 24px;
-            font-weight: 700;
-            color: #4a042e;
-            letter-spacing: -0.5px;
+            font-size: 28px;
+            font-weight: 400;
+            color: var(--primary-burgundy);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-family: 'Great Vibes', cursive;
+        }
+
+        .logo-icon {
+            width: 38px;
+            height: 38px;
+            background: var(--accent-pink);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary-burgundy);
+            font-size: 18px;
+        }
+
+        .logo-text-title {
+            font-family: 'Great Vibes', cursive;
+            font-size: 29px;
+            line-height: 1;
+        }
+
+        .logo-text-sub {
+            display: block;
+            font-size: 10px;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            font-weight: 600;
+            margin-top: -2px;
         }
 
         .nav-links {
             display: flex;
-            justify-content: center;
-            gap: 25px;
+            gap: 15px;
+            align-items: center;
         }
 
         .nav-links a {
             text-decoration: none;
-            color: #718096;
-            font-size: 16px;
+            color: var(--text-muted);
+            font-size: 14.5px;
             font-weight: 600;
             cursor: pointer;
-            padding: 8px 4px;
-            transition: color 0.2s ease, border-color 0.2s ease;
-            border-bottom: 2px solid transparent;
+            padding: 9px 18px;
+            border-radius: 30px;
+            transition: all 0.25s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: none !important;
         }
 
         .nav-links a:hover {
-            color: #710349;
+            color: var(--primary-burgundy);
+            background: var(--accent-pink);
         }
 
         .nav-links a.active {
-            color: #710349;
-            border-bottom: 2px solid #710349;
+            color: var(--white) !important;
+            background: var(--primary-burgundy);
+            box-shadow: 0 4px 12px rgba(122, 34, 79, 0.25);
+            border-bottom: none !important;
         }
 
         .nav-links a.logout {
-            color: #e53e3e;
+            color: var(--primary-burgundy);
         }
 
         .nav-links a.logout:hover {
-            color: #c53030;
+            background-color: #fff0f3;
+            color: #d32f2f;
         }
 
         .welcome-banner {
-            background: linear-gradient(135deg, #710349 0%, #4a042e 100%);
+            background: linear-gradient(105deg, var(--primary-dark) 0%, var(--primary-burgundy) 55%, #9c2d67 100%);
             color: white;
-            margin: 40px auto 25px auto;
-            padding: 40px;
-            border-radius: 16px;
-            width: 90%;
-            max-width: 1200px;
-            box-shadow: 0 4px 20px #e7cfde;
+            margin: 0 auto 30px auto;
+            padding: 40px 30px;
+            border-radius: var(--radius-lg);
+            width: 100%;
+            max-width: 1300px;
+            box-shadow: 0 12px 30px rgba(88, 22, 55, 0.2);
             text-align: center;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .welcome-banner::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
+            background: url('images/weddingVenue.jpg') center/cover no-repeat;
+            opacity: 0.15;
+            mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 100%);
+            -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 100%);
         }
 
         .welcome-banner h2 {
-            font-size: 26px;
+            font-family: 'Playfair Display', serif;
+            font-size: 34px;
             font-weight: 600;
             margin-bottom: 8px;
             letter-spacing: -0.5px;
+            position: relative;
+            z-index: 2;
         }
 
         .welcome-banner p {
-            font-size: 15px;
-            color: #f7fafc;
-            opacity: 0.85;
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 400;
+            position: relative;
+            z-index: 2;
         }
 
         .stats-container {
@@ -215,21 +326,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
             justify-content: space-between;
             gap: 20px;
             margin: 0 auto 30px auto;
-            width: 90%;
-            max-width: 1200px;
+            width: 100%;
+            max-width: 1300px;
         }
 
         .stat-card {
-            background-color: white;
-            color: #1a202c;
+            background-color: var(--white);
+            color: var(--text-dark);
             padding: 24px;
-            border-radius: 14px;
+            border-radius: var(--radius-md);
             text-align: left;
             flex: 1;
             font-weight: 600;
-            font-size: 16px;
-            box-shadow: 0 4px 6px -1px #f0f0f2, 0 2px 4px -1px #f5f5f6;
-            border: 1px solid #edf2f7;
+            font-size: 15px;
+            box-shadow: var(--shadow-soft);
+            border: 1px solid var(--border-color);
             position: relative;
             overflow: hidden;
         }
@@ -241,22 +352,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
             left: 0;
             width: 4px;
             height: 100%;
-            background-color: #710349;
+            background-color: var(--primary-burgundy);
         }
 
         .content-section {
-            background-color: #ffffff;
-            color: #2d3748;
+            background-color: var(--white);
+            color: var(--text-dark);
             margin: 0 auto;
             padding: 35px;
-            border-radius: 16px;
-            width: 90%;
-            max-width: 1200px;
+            border-radius: var(--radius-lg);
+            width: 100%;
+            max-width: 1300px;
             position: relative;
             min-height: 320px;
             display: none;
-            box-shadow: 0 4px 6px -1px #f0f0f2;
-            border: 1px solid #edf2f7;
+            box-shadow: var(--shadow-soft);
+            border: 1px solid var(--border-color);
         }
 
         .content-section.active-section {
@@ -269,7 +380,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                 opacity: 0;
                 transform: translateY(5px);
             }
-
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -282,37 +392,40 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
             align-items: center;
             margin-bottom: 25px;
             padding-bottom: 15px;
-            border-bottom: 1px solid #edf2f7;
+            border-bottom: 1px solid var(--border-color);
         }
 
         .section-header h3 {
             font-size: 20px;
-            font-weight: 600;
-            color: #1a202c;
+            font-weight: 700;
+            color: var(--primary-burgundy);
+            font-family: 'Playfair Display', serif;
         }
 
         .btn-add {
-            background-color: #710349;
-            color: #ffffff;
+            background: linear-gradient(135deg, var(--primary-burgundy) 0%, var(--primary-dark) 100%);
+            color: var(--white);
             border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
+            padding: 11px 24px;
+            border-radius: 30px;
             cursor: pointer;
             font-weight: 600;
             font-size: 14px;
-            transition: background 0.2s ease;
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 12px rgba(122, 34, 79, 0.2);
         }
 
         .btn-add:hover {
-            background-color: #520235;
+            background: linear-gradient(135deg, var(--primary-dark) 0%, #400d27 100%);
+            transform: translateY(-1px);
         }
 
         .btn-edit {
-            background-color: #f7fafc;
-            color: #4a5568;
-            border: 1px solid #e2e8f0;
-            padding: 8px 16px;
-            border-radius: 6px;
+            background-color: var(--bg-page);
+            color: var(--primary-burgundy);
+            border: 1px solid var(--border-color);
+            padding: 7px 16px;
+            border-radius: 20px;
             cursor: pointer;
             font-weight: 600;
             font-size: 13px;
@@ -321,16 +434,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
         }
 
         .btn-edit:hover {
-            background-color: #edf2f7;
-            color: #1a202c;
+            background-color: var(--accent-pink);
+            color: var(--primary-dark);
         }
 
         .btn-delete {
             background-color: #fff5f5;
             color: #e53e3e;
             border: 1px solid #fed7d7;
-            padding: 8px 16px;
-            border-radius: 6px;
+            padding: 7px 16px;
+            border-radius: 20px;
             cursor: pointer;
             font-weight: 600;
             font-size: 13px;
@@ -346,13 +459,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
             width: 100%;
             border-collapse: collapse;
             text-align: left;
-            font-size: 15px;
+            font-size: 14.5px;
         }
 
         th,
         td {
             padding: 16px 18px;
-            border-bottom: 1px solid #edf2f7;
+            border-bottom: 1px solid var(--border-color);
         }
 
         .inclusions-cell {
@@ -361,20 +474,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
         }
 
         th {
-            font-weight: 600;
-            color: #718096;
-            background-color: #f7fafc;
+            font-weight: 700;
+            color: var(--primary-burgundy);
+            background-color: var(--bg-page);
             font-size: 13px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
 
         td {
-            color: #4a5568;
+            color: var(--text-dark);
         }
 
         tr:hover td {
-            background-color: #fcfcfd;
+            background-color: #fcf8fa;
         }
 
         td:last-child {
@@ -382,15 +495,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
         }
 
         .select-status {
-            padding: 6px 10px;
-            border-radius: 6px;
+            padding: 8px 12px;
+            border-radius: var(--radius-sm);
             font-weight: 600;
-            font-size: 14px;
-            border: 1px solid #cbd5e0;
-            background-color: #fff;
+            font-size: 13.5px;
+            border: 1.5px solid #e2e8f0;
+            background-color: var(--white);
             cursor: pointer;
             outline: none;
             transition: all 0.2s;
+        }
+
+        .select-status:focus {
+            border-color: var(--primary-burgundy);
+            box-shadow: 0 0 0 3.5px rgba(122, 34, 79, 0.12);
         }
 
         .modal-overlay {
@@ -399,8 +517,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(51, 47, 50, 0.4);
-            backdrop-filter: blur(4px);
+            background-color: rgba(45, 20, 35, 0.55);
+            backdrop-filter: blur(5px);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -409,14 +527,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
         }
 
         .modal-box-add,
-        .modal-box-delete {
-            background-color: #ffffff;
+        .modal-box-delete,
+        .modal-box-logout {
+            background-color: var(--white);
             width: 90%;
-            border-radius: 16px;
+            border-radius: var(--radius-lg);
             padding: 35px;
-            color: #1a202c;
-            border: 1px solid #e2e8f0;
-            animation: fadeIn 0.4s ease-out;
+            color: var(--text-dark);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+            animation: fadeIn 0.3s ease-out;
             max-height: 90vh;
             overflow-y: auto;
         }
@@ -425,63 +545,39 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
             max-width: 580px;
         }
 
-        .modal-box-delete {
-            max-width: 440px;
-            text-align: center;
-        }
-
-        .modal-box-logout {
-            background-color: #ffffff;
-            width: 90%;
+        .modal-box-delete, .modal-box-logout {
             max-width: 420px;
-            border-radius: 16px;
-            padding: 35px;
             text-align: center;
-            box-shadow: 0 10px 25 rgba(0, 0, 0, 0.1);
-            animation: fadeIn 0.4s ease-out;
         }
 
-        .modal-box-logout p {
+        .modal-box-logout p, .modal-box-delete p {
             font-size: 15px;
-            color: #4a5568;
+            color: var(--text-dark);
             line-height: 1.5;
             margin-bottom: 25px;
-        }
-
-        .btn-logout-confirm {
-            background-color: #e53e3e;
-            color: #ffffff;
-            border: none;
-            padding: 11px 24px;
-            font-size: 14px;
-            font-weight: 600;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background 0.2s ease;
-        }
-
-        .btn-logout-confirm:hover {
-            background-color: #c53030;
+            font-weight: 500;
         }
 
         .modal-box-add h3 {
-            text-align: center;
-            font-size: 20px;
-            margin-bottom: 25px;
+            text-align: left;
+            font-size: 24px;
+            margin-bottom: 22px;
             font-weight: 600;
-            color: #1a202c;
+            color: var(--primary-burgundy);
+            font-family: 'Playfair Display', serif;
         }
 
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 18px;
+            text-align: left;
         }
 
         .form-group label {
             display: block;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 600;
-            margin-bottom: 8px;
-            color: #4a5568;
+            margin-bottom: 6px;
+            color: var(--text-dark);
         }
 
         .form-group input,
@@ -489,116 +585,116 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
         .form-group select {
             width: 100%;
             padding: 11px 14px;
-            border: 1px solid #cbd5e0;
-            border-radius: 8px;
-            font-size: 14px;
-            background-color: #fff;
-            color: #2d3748;
+            border: 1.5px solid #e2e8f0;
+            border-radius: var(--radius-sm);
+            font-size: 13.5px;
+            background-color: var(--bg-page);
+            color: var(--text-dark);
             transition: all 0.2s ease;
         }
 
         .form-group input[type="file"] {
             padding: 8px 12px;
             cursor: pointer;
+            background-color: var(--white);
         }
 
         .form-group input[type="file"]::file-selector-button {
-            background-color: #710349;
+            background-color: var(--primary-burgundy);
             color: white;
             border: none;
-            padding: 4px 12px;
-            border-radius: 4px;
+            padding: 6px 14px;
+            border-radius: 6px;
             font-weight: 600;
             font-size: 13px;
             margin-right: 10px;
-            transition: background 0.2s ease;
             cursor: pointer;
+            transition: background 0.2s ease;
         }
 
         .form-group input[type="file"]::file-selector-button:hover {
-            background-color: #520235;
+            background-color: var(--primary-dark);
         }
 
         .form-group input:focus,
         .form-group textarea:focus,
         .form-group select:focus {
             outline: none;
-            border-color: #710349;
-            box-shadow: 0 0 0 3px #ebd5e4;
+            background-color: var(--white);
+            border-color: var(--primary-burgundy);
+            box-shadow: 0 0 0 3.5px rgba(122, 34, 79, 0.12);
         }
 
         .form-actions {
             display: flex;
             justify-content: flex-end;
             gap: 12px;
-            margin-top: 30px;
+            margin-top: 25px;
         }
 
         .btn-submit {
-            background-color: #710349;
+            background: var(--primary-burgundy);
             color: white;
             border: none;
             padding: 11px 28px;
             font-size: 14px;
             font-weight: 600;
-            border-radius: 8px;
+            border-radius: 30px;
             cursor: pointer;
             transition: background 0.2s ease;
         }
 
         .btn-submit:hover {
-            background-color: #520235;
+            background: var(--primary-dark);
         }
 
-        .btn-cancel {
-            background-color: #ffffff;
-            color: #4a5568;
-            border: 1px solid #cbd5e0;
+        .btn-cancel, .btn-logout-confirm, .btn-confirm-ok {
             padding: 11px 28px;
             font-size: 14px;
             font-weight: 600;
-            border-radius: 8px;
+            border-radius: 30px;
             cursor: pointer;
             transition: all 0.2s ease;
         }
 
+        .btn-cancel {
+            background-color: var(--white);
+            color: var(--text-muted);
+            border: 1px solid var(--border-color);
+        }
+
         .btn-cancel:hover {
-            background-color: #f7fafc;
-            color: #1a202c;
+            background-color: var(--bg-page);
+            color: var(--text-dark);
         }
 
-        .btn-confirm-ok {
+        .btn-confirm-ok, .btn-logout-confirm {
             background-color: #e53e3e;
-            color: #ffffff;
+            color: var(--white);
             border: none;
-            padding: 11px 28px;
-            font-size: 14px;
-            font-weight: 600;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background 0.2s ease;
         }
 
-        .btn-confirm-ok:hover {
+        .btn-confirm-ok:hover, .btn-logout-confirm:hover {
             background-color: #c53030;
         }
 
         .toast-notification {
             position: fixed;
-            bottom: 25px;
-            right: 25px;
-            background-color: #2f855a;
-            color: white;
-            padding: 14px 28px;
-            border-radius: 8px;
+            top: 30px;
+            right: 30px;
+            background-color: var(--white);
+            color: var(--text-dark);
+            padding: 16px 24px;
+            border-radius: var(--radius-md);
             font-size: 14px;
             font-weight: 600;
             z-index: 1010;
-            box-shadow: 0 10px 15px -3px #e2e8f0;
+            box-shadow: 0 12px 35px rgba(122, 34, 79, 0.15);
+            border-left: 5px solid var(--primary-burgundy);
             visibility: hidden;
             opacity: 0;
-            transform: translateY(10px);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateY(-15px);
+            transition: all 0.3s ease;
         }
 
         .toast-notification.show-toast {
@@ -608,61 +704,67 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
         }
 
         .modal-box-view-image {
-            background-color: #ffffff;
+            background-color: var(--white);
             width: 90%;
             max-width: 650px;
-            border-radius: 16px;
-            padding: 25px;
+            border-radius: var(--radius-lg);
+            padding: 30px;
             text-align: center;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-            animation: fadeIn 0.4s ease-out;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+            animation: fadeIn 0.3s ease-out;
             position: relative;
+            border: 1px solid var(--border-color);
         }
 
         .modal-box-view-image img {
             max-width: 100%;
-            max-height: 60vh;
-            border-radius: 8px;
-            border: 1px solid #e2e8f0;
+            max-height: 55vh;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-color);
             object-fit: contain;
             margin-bottom: 15px;
+            background: #f7fafc;
         }
 
         .image-nav-btn {
             position: absolute;
-            top: 50%;
+            top: 48%;
             transform: translateY(-50%);
-            background: #710349;
+            background: var(--primary-burgundy);
             color: white;
             border: none;
-            padding: 10px 15px;
+            width: 40px;
+            height: 40px;
             cursor: pointer;
             border-radius: 50%;
             font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
         }
 
-        .prev-btn {
-            left: 10px;
+        .image-nav-btn:hover {
+            background: var(--primary-dark);
         }
 
-        .next-btn {
-            right: 10px;
-        }
+        .prev-btn { left: 15px; }
+        .next-btn { right: 15px; }
 
         .btn-close-image {
-            background-color: #710349;
-            color: #ffffff;
+            background-color: var(--primary-burgundy);
+            color: var(--white);
             border: none;
             padding: 11px 28px;
             font-size: 14px;
             font-weight: 600;
-            border-radius: 8px;
+            border-radius: 30px;
             cursor: pointer;
             transition: background 0.2s ease;
         }
 
         .btn-close-image:hover {
-            background-color: #520235;
+            background-color: var(--primary-dark);
         }
     </style>
 </head>
@@ -671,12 +773,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
 
     <div class="container">
         <div class="header">
-            <div class="logo-area">🌸 Wedding Hall Management - Owner Panel</div>
+            <div class="logo-area">
+                <div class="logo-icon">🌸</div>
+                <div>
+                    <span class="logo-text-title">TheHallz - Owner Panel</span>
+                </div>
+            </div>
             <div class="nav-links">
-                <a onclick="switchTab('venues')" id="tab-venues" class="active">Venues</a>
-                <a onclick="switchTab('packages')" id="tab-packages">Packages</a>
-                <a onclick="switchTab('bookings')" id="tab-bookings">Bookings</a>
-                <a class="logout" onclick="openModal('modal-logout-confirmation')">Log out</a>
+                <a onclick="switchTab('venues')" id="tab-venues" class="active"><i class="fa-solid fa-building"></i> Venues</a>
+                <a onclick="switchTab('packages')" id="tab-packages"><i class="fa-solid fa-box-archive"></i> Packages</a>
+                <a onclick="switchTab('bookings')" id="tab-bookings"><i class="fa-regular fa-calendar-check"></i> Bookings</a>
+                <a class="logout" onclick="openModal('modal-logout-confirmation')"><i class="fa-solid fa-arrow-right-from-bracket"></i> Log out</a>
             </div>
         </div>
 
@@ -695,7 +802,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
         <div id="section-venues" class="content-section active-section">
             <div class="section-header">
                 <h3>Venues</h3>
-                <button class="btn-add" onclick="openModal('modal-add-venue')">+ Add New Venue</button>
+                <button class="btn-add" onclick="openModal('modal-add-venue')"><i class="fa-solid fa-plus"></i> Add New Venue</button>
             </div>
             <table id="table-venues">
                 <thead>
@@ -751,7 +858,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
         <div id="section-packages" class="content-section">
             <div class="section-header">
                 <h3>Packages</h3>
-                <button class="btn-add" onclick="openModal('modal-add-package')">+ Add New Package</button>
+                <button class="btn-add" onclick="openModal('modal-add-package')"><i class="fa-solid fa-plus"></i> Add New Package</button>
             </div>
             <table id="table-packages">
                 <thead>
@@ -848,11 +955,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
 
     <div id="modal-view-image" class="modal-overlay">
         <div class="modal-box-view-image">
-            <h3 id="gallery-title" style="margin-bottom: 15px; font-weight: 600; color: #1a202c;">Image View</h3>
+            <h3 id="gallery-title" style="margin-bottom: 15px; font-weight: 600; color: var(--primary-burgundy); font-family: 'Playfair Display', serif;">Image View</h3>
             <button class="image-nav-btn prev-btn" onclick="changeImage(-1)">&#10094;</button>
             <img id="ssm-img-placeholder" src="" alt="Image">
             <button class="image-nav-btn next-btn" onclick="changeImage(1)">&#10095;</button>
-            <p id="image-counter" style="margin-bottom: 10px; color: #718096;"></p>
+            <p id="image-counter" style="margin-bottom: 15px; color: var(--text-muted); font-size: 13.5px;"></p>
             <div class="form-actions" style="justify-content: center; margin-top: 0;">
                 <button type="button" class="btn-close-image" onclick="closeModal('modal-view-image')">Close</button>
             </div>

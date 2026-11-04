@@ -77,115 +77,211 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
     <title>Admin Panel - All Users</title>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts & Font Awesome Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
+        :root {
+            --primary-burgundy: #7a224f;
+            --primary-dark: #581637;
+            --accent-pink: #fce4ec;
+            --badge-pink: #f8bbd0;
+            --bg-page: #f9f6f8;
+            --text-dark: #2d3748;
+            --text-muted: #718096;
+            --border-color: #f0e6eb;
+            --white: #ffffff;
+            --radius-lg: 20px;
+            --radius-md: 14px;
+            --radius-sm: 8px;
+            --shadow-soft: 0 10px 30px rgba(122, 34, 79, 0.05);
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
         }
 
         body {
-            background-color: #f4f5f7;
-            color: #2d3748;
+            background-color: var(--bg-page);
+            color: var(--text-dark);
             min-height: 100vh;
             -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 120px;
+            background: linear-gradient(180deg, rgba(253, 237, 244, 0) 0%, rgba(248, 187, 208, 0.3) 100%);
+            z-index: -1;
+            pointer-events: none;
         }
 
         .container {
             width: 100%;
-            padding-bottom: 60px;
+            max-width: 1300px;
+            margin: 0 auto;
+            padding: 0 20px 60px 20px;
         }
 
         .header {
-            background-color: #ffffff;
-            padding: 24px 5%;
-            border-bottom: 1px solid #e2e8f0;
+            background-color: var(--white);
+            padding: 16px 35px;
+            margin: 0 -20px 25px -20px;
+            border-bottom: 1px solid var(--border-color);
             display: flex;
-            flex-direction: column;
+            justify-content: space-between;
             align-items: center;
-            gap: 16px;
+            position: relative;
+        }
+
+        .header::after {
+            content: '🌸🍃';
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            opacity: 0.15;
+            font-size: 28px;
+            pointer-events: none;
         }
 
         .logo-area {
-            font-size: 24px;
-            font-weight: 700;
-            color: #4a042e;
-            letter-spacing: -0.5px;
+            font-size: 28px;
+            font-weight: 400;
+            color: var(--primary-burgundy);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-family: 'Great Vibes', cursive;
+        }
+
+        .logo-area::before {
+            content: '🌸';
+            width: 38px;
+            height: 38px;
+            background: var(--accent-pink);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary-burgundy);
+            font-size: 18px;
         }
 
         .nav-links {
             display: flex;
-            justify-content: center;
-            gap: 25px;
+            gap: 15px;
+            align-items: center;
         }
 
         .nav-links a {
             text-decoration: none;
-            color: #718096;
-            font-size: 15px;
+            color: var(--text-muted);
+            font-size: 14.5px;
             font-weight: 600;
             cursor: pointer;
-            padding: 6px 4px 12px 4px;
-            transition: color 0.2s ease, border-color 0.2s ease;
-            border-bottom: 3px solid transparent;
+            padding: 9px 18px;
+            border-radius: 30px;
+            transition: all 0.25s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: none !important;
         }
 
         .nav-links a:hover {
-            color: #710349;
+            color: var(--primary-burgundy);
+            background: var(--accent-pink);
         }
 
         .nav-links a.active {
-            color: #710349;
-            border-bottom: 3px solid #710349;
+            color: var(--white) !important;
+            background: var(--primary-burgundy);
+            box-shadow: 0 4px 12px rgba(122, 34, 79, 0.25);
+            border-bottom: none !important;
+            padding: 9px 18px !important;
         }
 
         .nav-links a.logout {
-            color: #e53e3e;
+            color: var(--primary-burgundy);
         }
 
         .nav-links a.logout:hover {
-            color: #c53030;
+            background-color: #fff0f3;
+            color: #d32f2f;
         }
 
         .welcome-banner {
-            background: linear-gradient(135deg, #710349 0%, #4a042e 100%);
+            background: linear-gradient(105deg, var(--primary-dark) 0%, var(--primary-burgundy) 55%, #9c2d67 100%);
             color: white;
-            margin: 40px auto 25px auto;
-            padding: 40px;
-            border-radius: 16px;
-            width: 90%;
-            max-width: 1200px;
-            box-shadow: 0 4px 20px rgba(113, 3, 73, 0.15);
+            margin: 0 auto 30px auto;
+            padding: 40px 30px;
+            border-radius: var(--radius-lg);
+            width: 100%;
+            max-width: 1300px;
+            box-shadow: 0 12px 30px rgba(88, 22, 55, 0.2);
             text-align: center;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .welcome-banner::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
+            background: url('images/weddingVenue.jpg') center/cover no-repeat;
+            opacity: 0.15;
+            mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 100%);
+            -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 100%);
         }
 
         .welcome-banner h2 {
-            font-size: 26px;
+            font-family: 'Playfair Display', serif;
+            font-size: 34px;
             font-weight: 600;
             margin-bottom: 8px;
             letter-spacing: -0.5px;
+            position: relative;
+            z-index: 2;
         }
 
         .welcome-banner p {
-            font-size: 15px;
-            color: #f7fafc;
-            opacity: 0.85;
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 400;
+            position: relative;
+            z-index: 2;
         }
 
         .content-section {
-            background-color: #ffffff;
-            color: #2d3748;
+            background-color: var(--white);
+            color: var(--text-dark);
             margin: 0 auto;
             padding: 35px;
-            border-radius: 16px;
-            width: 90%;
-            max-width: 1200px;
+            border-radius: var(--radius-lg);
+            width: 100%;
+            max-width: 1300px;
             position: relative;
             min-height: 320px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-            border: 1px solid #edf2f7;
+            box-shadow: var(--shadow-soft);
+            border: 1px solid var(--border-color);
             animation: fadeIn 0.3s ease;
         }
 
@@ -212,7 +308,7 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
             align-items: center;
             margin-bottom: 25px;
             padding-bottom: 15px;
-            border-bottom: 1px solid #edf2f7;
+            border-bottom: 1px solid var(--border-color);
         }
 
         /* TAMBAHAN: Menyusun susunan tajuk dan sub-menu rapat */
@@ -224,8 +320,9 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
 
         .section-header h3 {
             font-size: 20px;
-            font-weight: 600;
-            color: #1a202c;
+            font-weight: 700;
+            color: var(--primary-burgundy);
+            font-family: 'Playfair Display', serif;
         }
 
         /* TAMBAHAN: Gaya reka bentuk sub-menu Chart & List */
@@ -237,7 +334,7 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
         .sub-nav span {
             font-size: 14px;
             font-weight: 500;
-            color: #718096;
+            color: var(--text-muted);
             cursor: pointer;
             padding-bottom: 4px;
             border-bottom: 2px solid transparent;
@@ -245,13 +342,13 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
         }
 
         .sub-nav span:hover {
-            color: #710349;
+            color: var(--primary-burgundy);
         }
 
         .sub-nav span.active-sub {
-            color: #1a202c;
+            color: var(--primary-burgundy);
             font-weight: 600;
-            border-bottom: 2px solid #1a202c;
+            border-bottom: 2px solid var(--primary-burgundy);
         }
 
         /* TAMBAHAN: Container khas untuk meletakkan saiz Pie Chart */
@@ -267,8 +364,8 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
             background-color: #fff5f5;
             color: #e53e3e;
             border: 1px solid #fed7d7;
-            padding: 8px 16px;
-            border-radius: 6px;
+            padding: 7px 16px;
+            border-radius: 20px;
             cursor: pointer;
             font-weight: 600;
             font-size: 13px;
@@ -284,30 +381,30 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
             width: 100%;
             border-collapse: collapse;
             text-align: left;
-            font-size: 15px;
+            font-size: 14.5px;
         }
 
         th,
         td {
             padding: 16px 18px;
-            border-bottom: 1px solid #edf2f7;
+            border-bottom: 1px solid var(--border-color);
         }
 
         th {
-            font-weight: 600;
-            color: #718096;
-            background-color: #f7fafc;
+            font-weight: 700;
+            color: var(--primary-burgundy);
+            background-color: var(--bg-page);
             font-size: 13px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
 
         td {
-            color: #4a5568;
+            color: var(--text-dark);
         }
 
         tr:hover td {
-            background-color: #fcfcfd;
+            background-color: #fcf8fa;
         }
 
         td:last-child {
@@ -316,12 +413,12 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
 
         /* PENGUBAHSUAIAN GAYA UNTUK DROPDOWN STATUS */
         .status-select {
-            padding: 6px 10px;
-            border-radius: 6px;
+            padding: 6px 12px;
+            border-radius: var(--radius-sm);
             font-weight: 600;
-            font-size: 14px;
-            border: 1px solid #e2e8f0;
-            background-color: #ffffff;
+            font-size: 13.5px;
+            border: 1.5px solid #e2e8f0;
+            background-color: var(--white);
             cursor: pointer;
             outline: none;
             transition: all 0.2s ease;
@@ -345,8 +442,8 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(26, 32, 44, 0.4);
-            backdrop-filter: blur(4px);
+            background-color: rgba(45, 20, 35, 0.55);
+            backdrop-filter: blur(5px);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -355,15 +452,15 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
         }
 
         .modal-box-delete {
-            background-color: #ffffff;
+            background-color: var(--white);
             width: 90%;
-            border-radius: 16px;
+            border-radius: var(--radius-lg);
             padding: 35px;
-            color: #1a202c;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-            border: 1px solid #e2e8f0;
+            color: var(--text-dark);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+            border: 1px solid var(--border-color);
             animation: modalSlideUp 0.3s ease;
-            max-width: 440px;
+            max-width: 420px;
             text-align: center;
         }
 
@@ -383,40 +480,42 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
             display: flex;
             justify-content: center;
             gap: 12px;
-            margin-top: 30px;
+            margin-top: 25px;
         }
 
         .btn-cancel {
-            background-color: #ffffff;
-            color: #4a5568;
-            border: 1px solid #cbd5e0;
-            padding: 11px 28px;
+            background-color: var(--white);
+            color: var(--text-muted);
+            border: 1px solid var(--border-color);
+            padding: 11px 24px;
             font-size: 14px;
             font-weight: 600;
-            border-radius: 8px;
+            border-radius: 30px;
             cursor: pointer;
             transition: all 0.2s ease;
         }
 
         .btn-cancel:hover {
-            background-color: #f7fafc;
-            color: #1a202c;
+            background-color: var(--bg-page);
+            color: var(--text-dark);
         }
 
         .modal-box-delete p {
-            font-size: 16px;
-            color: #4a5568;
+            font-size: 15px;
+            color: var(--text-dark);
             margin-bottom: 25px;
+            line-height: 1.5;
+            font-weight: 500;
         }
 
         .btn-confirm-ok {
             background-color: #e53e3e;
-            color: #ffffff;
+            color: var(--white);
             border: none;
-            padding: 11px 28px;
+            padding: 11px 24px;
             font-size: 14px;
             font-weight: 600;
-            border-radius: 8px;
+            border-radius: 30px;
             cursor: pointer;
             transition: background 0.2s ease;
         }
@@ -427,21 +526,22 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
 
         .toast-notification {
             position: fixed;
-            bottom: 25px;
-            right: 25px;
-            background-color: #2f855a;
-            color: white;
-            padding: 14px 28px;
-            border-radius: 8px;
+            top: 30px;
+            right: 30px;
+            background-color: var(--white);
+            color: var(--text-dark);
+            padding: 16px 24px;
+            border-radius: var(--radius-md);
             font-size: 14px;
             font-weight: 600;
             z-index: 1010;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 12px 35px rgba(122, 34, 79, 0.15);
+            border-left: 5px solid var(--primary-burgundy);
 
             visibility: hidden;
             opacity: 0;
-            transform: translateY(10px);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateY(-15px);
+            transition: all 0.3s ease;
         }
 
         .toast-notification.show-toast {
@@ -456,14 +556,14 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
 
     <div class="container">
         <div class="header">
-            <div class="logo-area">🌸 Wedding Hall Management - Admin Panel</div>
+            <div class="logo-area">Wedding Hall Management - Admin Panel</div>
             <div class="nav-links">
-                <a href="admin_dashboard.php">Dashboard</a>
-                <a href="admin_venues.php">Venues</a>
-                 <a href="admin_packages.php">Packages</a>
-                <a href="admin_users.php" class="active">Users</a>
-                <a href="admin_bookings.php">Bookings</a>
-                <a class="logout" onclick="openModal('modal-logout-confirmation', this)">Log out</a>
+                <a href="admin_dashboard.php"><i class="fa-solid fa-chart-pie"></i> Dashboard</a>
+                <a href="admin_venues.php"><i class="fa-solid fa-building"></i> Venues</a>
+                 <a href="admin_packages.php"><i class="fa-solid fa-box-archive"></i> Packages</a>
+                <a href="admin_users.php" class="active"><i class="fa-solid fa-users"></i> Users</a>
+                <a href="admin_bookings.php"><i class="fa-regular fa-calendar-check"></i> Bookings</a>
+                <a class="logout" onclick="openModal('modal-logout-confirmation', this)"><i class="fa-solid fa-arrow-right-from-bracket"></i> Log out</a>
             </div>
         </div>
 
@@ -659,9 +759,9 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
                         label: 'Total Users',
                         data: [clientCount, ownerCount],
                         backgroundColor: [
-                            '#710349',
+                            '#7a224f',
               
-                            '#4a042e',
+                            '#581637',
                             '#ed64a6',
                             '#ecc94b'
                         ],

@@ -108,10 +108,8 @@ if ($booking_result) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Customer Dashboard - Wedding Hall Management</title>
-    <!-- Font Google: Plus Jakarta Sans, Playfair Display & Great Vibes -->
+    <title>Customer Dashboard - 💍TheHallz</title>
     <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
-    <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
@@ -932,8 +930,7 @@ if ($booking_result) {
             <div class="logo-area">
                 <div class="logo-icon">🌸</div>
                 <div>
-                    <span class="logo-text-title">Wedding Hall</span>
-                    <span class="logo-text-sub">Management</span>
+                    <span class="logo-text-title">TheHallz</span>
                 </div>
             </div>
             <div class="nav-links">

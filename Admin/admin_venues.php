@@ -903,7 +903,7 @@ if ($venue_status == 'rejected') {
     }
 
     function confirmLogout() {
-        window.location.href = 'login.php';
+        window.location.href = 'index.php';
     }
 
     function triggerToast(message) {

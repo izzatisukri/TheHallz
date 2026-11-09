@@ -818,7 +818,7 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
         }
 
         function confirmLogout() {
-            window.location.href = 'login.php';
+            window.location.href = 'index.php';
         }
 
         function triggerToast(message) {

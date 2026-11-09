@@ -1323,7 +1323,7 @@ if ($booking_result) {
         }
 
         function executeLogout() {
-            window.location.href = 'login.php';
+            window.location.href = 'index.php';
         }
 
         function triggerToast(message) {

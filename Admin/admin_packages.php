@@ -479,7 +479,7 @@ $result = mysqli_query($conn, $query);
     }
 
     function confirmLogout() {
-        window.location.href = 'login.php'; 
+        window.location.href = 'index.php'; 
     }
 
     window.onclick = function(event) {

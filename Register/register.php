@@ -116,13 +116,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 body {
     font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     background: radial-gradient(circle at center, #7d0552 0%, #520131 70%, #2b0019 100%); 
-    height: 100vh; 
+    min-height: 100vh; 
     width: 100vw;
     display: flex;
     align-items: center; 
     justify-content: center;
-    overflow: hidden; 
-    padding: 15px;
+    overflow-x: hidden;
+    overflow-y: auto; 
+    padding: 20px 15px;
 }
 
 .container {
@@ -215,6 +216,44 @@ body {
     font-size: 13px;
 }
 
+/* Privacy Notice Styling inside Form */
+.privacy-notice-box {
+    background-color: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    padding: 12px 15px;
+    font-size: 12px;
+    color: #334155;
+    line-height: 1.4;
+    margin-top: 15px;
+    margin-bottom: 12px;
+}
+
+.privacy-notice-box p {
+    margin-bottom: 8px;
+}
+
+.checkbox-group {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.checkbox-group input[type="checkbox"] {
+    width: auto;
+    margin-top: 2px;
+    cursor: pointer;
+    accent-color: #710349;
+}
+
+.checkbox-group label {
+    font-size: 12.5px;
+    color: #1e293b;
+    font-weight: 600;
+    cursor: pointer;
+    line-height: 1.3;
+}
+
 .btn-register {
     width: 100%;
     background-color: #710349;
@@ -225,7 +264,7 @@ body {
     font-size: 15px;
     cursor: pointer;
     text-transform: uppercase;
-    margin-top: 10px;
+    margin-top: 5px;
     margin-bottom: 12px; 
     letter-spacing: 2px;
     font-weight: bold;
@@ -233,15 +272,17 @@ body {
     transition: all 0.2s ease;
 }
 
-.btn-register:hover {
+.btn-register:hover:not(:disabled) {
     background-color: #540236;
     box-shadow: 0 6px 20px #71034966;
     transform: translateY(-1px);
 }
 
-.btn-register:active {
-    transform: translateY(1px);
-    box-shadow: 0 2px 8px #71034966;
+.btn-register:disabled {
+    background-color: #a3a3a3;
+    box-shadow: none;
+    cursor: not-allowed;
+    opacity: 0.7;
 }
 
 .footer-links {
@@ -272,13 +313,14 @@ body {
     to { opacity: 1; transform: translateY(0); }
 }
 
+/* Modal Styling */
 .modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.4); 
+    background-color: rgba(0, 0, 0, 0.5); 
     backdrop-filter: blur(4px);
     display: flex;
     align-items: center;
@@ -297,11 +339,11 @@ body {
 .modal-card {
     background-color: #ffffff;
     border-radius: 24px; 
-    padding: 35px 40px;
-    max-width: 500px;
+    padding: 30px 35px;
+    max-width: 520px;
     width: 90%;
-    text-align: center;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    text-align: left;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
     transform: scale(0.9);
     transition: transform 0.3s ease;
 }
@@ -310,12 +352,30 @@ body {
     transform: scale(1);
 }
 
+.modal-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #710349;
+    margin-bottom: 12px;
+    text-align: center;
+}
+
 .modal-text {
-    font-size: 16px;
+    font-size: 13.5px;
     color: #4a5568;
     line-height: 1.6;
-    margin-bottom: 25px;
-    font-weight: 400;
+    margin-bottom: 20px;
+    max-height: 300px;
+    overflow-y: auto;
+    padding-right: 8px;
+}
+
+.modal-text p {
+    margin-bottom: 10px;
+}
+
+.modal-btn-container {
+    text-align: center;
 }
 
 .modal-btn {
@@ -323,8 +383,8 @@ body {
     color: #ffffff;
     border: none;
     border-radius: 10px;
-    padding: 10px 30px;
-    font-size: 15px;
+    padding: 11px 32px;
+    font-size: 14px;
     font-weight: bold;
     cursor: pointer;
     box-shadow: 0 4px 12px rgba(113, 3, 73, 0.3);
@@ -388,7 +448,17 @@ body {
                     </select>
                 </div>
 
-                <button type="submit" class="btn-register">REGISTER</button>
+                <!-- Privacy Notice Section -->
+                <div class="privacy-notice-box">
+                    <p>Before creating your account, please read and agree to our privacy policy.</p>
+                    <p>Your personal information, including name, email address, phone number and booking details, will be collected and used for account management and wedding venue booking purpose. We take reasonable steps to protect your personal information from unauthorized access.</p>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="agree-privacy" name="agree_privacy" required>
+                        <label for="agree-privacy">I have read and agree to the privacy policy and terms of use.</label>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-register" id="btnRegister" disabled>REGISTER</button>
 
                 <div class="footer-links">
                     Already have an account?
@@ -398,12 +468,16 @@ body {
         </div>
     </div>
 
+    <!-- Custom Modal for Success Privacy Policy & Error Messages -->
     <div class="modal-overlay" id="customModal">
         <div class="modal-card">
+            <div class="modal-title" id="modalTitle">Privacy Policy & Terms</div>
             <div class="modal-text" id="modalMessage">
-                Registration Successful! Please click OK to go to your page.
+                <!-- Content set dynamically via JS -->
             </div>
-            <button class="modal-btn" id="modalOkBtn">OK</button>
+            <div class="modal-btn-container">
+                <button class="modal-btn" id="modalOkBtn">I Agree & Continue</button>
+            </div>
         </div>
     </div>
 
@@ -413,11 +487,29 @@ body {
         const chosenRole = "<?php echo $role; ?>";
 
         const modal = document.getElementById('customModal');
+        const modalTitle = document.getElementById('modalTitle');
         const modalMessage = document.getElementById('modalMessage');
         const modalOkBtn = document.getElementById('modalOkBtn');
+        const agreeCheckbox = document.getElementById('agree-privacy');
+        const btnRegister = document.getElementById('btnRegister');
 
+        // Enable/disable register button based on checkbox state
+        agreeCheckbox.addEventListener('change', function() {
+            btnRegister.disabled = !this.checked;
+        });
+
+        // Handle Registration Success / Error Modal Display
         if (phpStatus === "success") {
-            modalMessage.innerText = 'Registration Successful! Please click OK to go to your page.';
+            modalTitle.innerText = "Privacy Policy & Account Confirmation";
+            modalMessage.innerHTML = `
+                <p><strong>Welcome! Your registration was successful.</strong></p>
+                <p>Before entering your account, please review our core Privacy Terms:</p>
+                <p>1. <strong>Data Usage:</strong> Your personal information (Name, Email, Phone Number, and Booking Details) is collected exclusively for account management, venue bookings, and customer support.</p>
+                <p>2. <strong>Data Protection:</strong> We implement administrative and technical security measures to prevent unauthorized access, data loss, or disclosure.</p>
+                <p>3. <strong>Your Rights:</strong> You may update or request deletion of your account details at any time through your dashboard settings.</p>
+                <p>Click below to accept and proceed to your account.</p>
+            `;
+            modalOkBtn.innerText = "I Agree & Continue";
             modal.classList.add('active');
 
             modalOkBtn.onclick = function() {
@@ -431,13 +523,16 @@ body {
                 }
             };
         } else if (phpStatus === "error") {
+            modalTitle.innerText = "Registration Failed";
             modalMessage.innerText = phpMessage;
+            modalOkBtn.innerText = "OK";
             modal.classList.add('active');
             modalOkBtn.onclick = function() {
                 modal.classList.remove('active');
             };
         }
 
+        // Form Validation before submit
         document.getElementById('registerForm').addEventListener('submit', function(event) {
             const password = document.getElementById('password').value;
             const confirmPassword = document.getElementById('confirm-password').value;
@@ -445,7 +540,9 @@ body {
             const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*()_+{}\[\]:;<>,.?~\\/-]).{6,}$/;
             if (!passwordRegex.test(password)) {
                 event.preventDefault();
+                modalTitle.innerText = "Invalid Password";
                 modalMessage.innerText = 'Password must be at least 6 characters with uppercase, lowercase, and symbols!';
+                modalOkBtn.innerText = "OK";
                 modal.classList.add('active');
                 modalOkBtn.onclick = function() {
                     modal.classList.remove('active');
@@ -455,7 +552,9 @@ body {
 
             if (password !== confirmPassword) {
                 event.preventDefault();
+                modalTitle.innerText = "Password Mismatch";
                 modalMessage.innerText = 'Password and Confirm Password do not match!';
+                modalOkBtn.innerText = "OK";
                 modal.classList.add('active');
                 modalOkBtn.onclick = function() {
                     modal.classList.remove('active');

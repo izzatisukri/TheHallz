@@ -636,7 +636,7 @@ if ($booking_result && mysqli_num_rows($booking_result) > 0) {
     }
 
     function confirmLogout() {
-        window.location.href = 'login.php';
+        window.location.href = 'index.php';
     }
 
     function triggerReportGeneration() {

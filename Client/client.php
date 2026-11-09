@@ -108,7 +108,7 @@ if ($booking_result) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Customer Dashboard - 💍TheHallz</title>
+    <title>Customer Dashboard - TheHallz</title>
     <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
@@ -943,7 +943,7 @@ if ($booking_result) {
         <!-- WELCOME BANNER -->
         <div class="welcome-banner">
             <div class="welcome-text">
-                <h2>Welcome, <?php echo htmlspecialchars($client_name); ?>! 👰🏻‍♀️🤵🏻</h2>
+                <h2>Welcome, <?php echo htmlspecialchars($client_name); ?>!</h2>
                 <p>Find your perfect wedding venues!</p>
             </div>
         </div>

@@ -181,7 +181,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
         }
 
         .header::after {
-            content: '🌸🍃';
+            content: '🏛️✨';
             position: absolute;
             right: 20px;
             top: 50%;
@@ -774,9 +774,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     <div class="container">
         <div class="header">
             <div class="logo-area">
-                <div class="logo-icon">🌸</div>
+                <div class="logo-icon">🏛️</div>
                 <div>
-                    <span class="logo-text-title">TheHallz - Owner Panel</span>
+                    <span class="logo-text-title">TheHallz - Venue Owner</span>
                 </div>
             </div>
             <div class="nav-links">
@@ -788,7 +788,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
         </div>
 
         <div class="welcome-banner">
-            <h2>Welcome, <?php echo htmlspecialchars($owner_name); ?>! 🏢</h2>
+            <h2>Welcome, <?php echo htmlspecialchars($owner_name); ?>!</h2>
             <p>Manage your venues, packages, and view booking requests seamlessly.</p>
         </div>
 
@@ -973,7 +973,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                 <input type="hidden" name="action" value="add_venue">
                 <div class="form-group">
                     <label>Owner Name</label>
-                    <input type="text" id="v-owner-name" name="v_owner_name" placeholder="e.g., Ahmad bin Zulkifli" required>
+                    <!-- Diisi terus dengan nama akaun yang sedang log masuk dan disetkan kepada readonly -->
+                    <input type="text" id="v-owner-name" name="v_owner_name" value="<?php echo htmlspecialchars($owner_name); ?>" readonly style="background-color: #edf2f7; cursor: not-allowed;">
                 </div>
                 <div class="form-group">
                     <label>Venue Name</label>

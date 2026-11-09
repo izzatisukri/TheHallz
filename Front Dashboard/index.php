@@ -50,7 +50,7 @@ session_start();
             text-decoration: none;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 0px; /* Dikurangkan supaya tiada jarak */
         }
 
         .logo span {
@@ -131,6 +131,8 @@ session_start();
         }
 
         .hero-title span {
+            display: block;
+            margin-top: 8px;
             background: linear-gradient(135deg, #f472b6, #db2777);
             -webkit-background-clip: text;
             background-clip: text;
@@ -248,7 +250,6 @@ session_start();
         </div>
     </header>
 
-    <!-- Main Hero / Intro Section -->
     <main class="hero-container">
         <div class="hero-content">
             <div class="hero-badge">Wedding Venue Management System</div>
@@ -269,7 +270,7 @@ session_start();
             Have any problem? Contact us at <a href="mailto:admin@gmail.com">admin@gmail.com</a>
         </div>
         <div>
-            &copy; 2026 TheHallz System. All rights reserved.
+            &copy; 2026 TheHallz. All rights reserved.
         </div>
     </footer>
 

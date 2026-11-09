@@ -556,7 +556,7 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
 
     <div class="container">
         <div class="header">
-            <div class="logo-area">Wedding Hall Management - Admin Panel</div>
+            <div class="logo-area">Wedding Hall Management - Admin</div>
             <div class="nav-links">
                 <a href="admin_dashboard.php"><i class="fa-solid fa-chart-pie"></i> Dashboard</a>
                 <a href="admin_venues.php"><i class="fa-solid fa-building"></i> Venues</a>
@@ -569,7 +569,7 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
 
         <div class="welcome-banner">
        
-             <h2>Welcome, Admin! 👑</h2>
+             <h2>Welcome, Admin!</h2>
             <p>Manage users, venues and generate reports.</p>
         </div>
 

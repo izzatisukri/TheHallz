@@ -524,7 +524,7 @@ if ($booking_result && mysqli_num_rows($booking_result) > 0) {
 
 <div class="container">
     <div class="header">
-        <div class="logo-area">Wedding Hall Management - Admin Panel</div>
+        <div class="logo-area">Wedding Hall Management - Admin</div>
         <div class="nav-links">
             <a href="admin_dashboard.php" class="active"><i class="fa-solid fa-chart-pie"></i> Dashboard</a>
             <a href="admin_venues.php"><i class="fa-solid fa-building"></i> Venues</a>
@@ -536,7 +536,7 @@ if ($booking_result && mysqli_num_rows($booking_result) > 0) {
     </div>
 
     <div class="welcome-banner">
-        <h2>Welcome, Admin! 👑</h2>
+        <h2>Welcome, Admin!</h2>
         <p>Manage users, venues and generate reports.</p>
     </div>
 
@@ -572,7 +572,7 @@ if ($booking_result && mysqli_num_rows($booking_result) > 0) {
                     <option value="2030">2030</option>
                 </select>
                 
-                <button class="btn-premium" onclick="triggerReportGeneration()">Generate Report</button>
+                <button class="btn-premium" onclick="triggerReportGeneration()">Generate Graph</button>
             </div>
         </div>
 

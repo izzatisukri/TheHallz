@@ -66,6 +66,27 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type']) && $_PO
     }
 }
 
+// Handle Rating Submission via POST dengan Redirect (PRG Pattern) untuk elak form resubmission alert
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type']) && $_POST['action_type'] == 'submit_rating') {
+    $venue_id_rated = mysqli_real_escape_string($conn, $_POST['rate_venue_id']);
+    $rating_stars = (int)$_POST['rating_stars'];
+    if (!isset($_SESSION['venue_ratings'])) {
+        $_SESSION['venue_ratings'] = [];
+    }
+    if (!isset($_SESSION['venue_rating_breakdown'][$venue_id_rated])) {
+        $_SESSION['venue_rating_breakdown'][$venue_id_rated] = [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0];
+    }
+    
+    if (!isset($_SESSION['has_rated_venue'][$venue_id_rated])) {
+        $_SESSION['venue_rating_breakdown'][$venue_id_rated][$rating_stars]++;
+        $_SESSION['has_rated_venue'][$venue_id_rated] = true;
+    }
+    $_SESSION['venue_ratings'][$venue_id_rated] = $rating_stars;
+    
+    header("Location: " . $_SERVER['PHP_SELF']);
+    exit();
+}
+
 $venues_list = [];
 $venue_sql = "SELECT v.*, p.package_name, p.package_price, p.package_id 
               FROM venue v 
@@ -89,7 +110,7 @@ if ($pkg_result) {
 }
 
 $my_bookings = [];
-$booking_sql = "SELECT b.*, v.venue_name, p.package_name 
+$booking_sql = "SELECT b.*, v.venue_name, v.venue_id, p.package_name 
                 FROM booking b
                 JOIN venue v ON b.venue_id = v.venue_id
                 LEFT JOIN package p ON b.package_id = p.package_id
@@ -919,6 +940,53 @@ if ($booking_result) {
             color: var(--text-dark);
             margin-top: 15px;
         }
+
+        /* RATING STARS CSS */
+        .star-rating-container {
+            display: flex;
+            gap: 5px;
+            font-size: 20px;
+            color: #cbd5e0;
+            cursor: pointer;
+            margin-top: 5px;
+        }
+        .star-rating-container .fa-star.rated,
+        .star-rating-container .fa-star:hover,
+        .star-rating-container .fa-star.active {
+            color: #f6ad55;
+        }
+
+        /* BREAKDOWN RATING BARS STYLE */
+        .rating-breakdown-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 10px;
+            font-size: 14px;
+            color: var(--text-dark);
+        }
+        .rating-star-label {
+            width: 35px;
+            text-align: right;
+            font-weight: 600;
+        }
+        .rating-bar-track {
+            flex-grow: 1;
+            height: 8px;
+            background-color: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .rating-bar-fill {
+            height: 100%;
+            background-color: #c05621;
+            border-radius: 4px;
+        }
+        .rating-count-label {
+            width: 25px;
+            text-align: left;
+            color: var(--text-muted);
+        }
     </style>
 </head>
 
@@ -952,7 +1020,7 @@ if ($booking_result) {
         <div class="content-section">
             <div class="home-layout">
 
-                <!-- KANAN: BORANG TAPISAN (BUDGET DIBUANG & KOTAK LOCATION DIPANJANGKAN) -->
+                <!-- KANAN: BORANG TAPISAN -->
                 <div class="search-filter-box">
                     <div class="section-title">Filter Options</div>
 
@@ -1007,6 +1075,9 @@ if ($booking_result) {
                                                     <i class="fa-solid fa-arrow-right"></i> view package
                                                 </a>
                                             <?php endif; ?>
+                                            <a class="view-pic-link" onclick="previewVenueRating('<?php echo $venue['venue_id']; ?>', '<?php echo htmlspecialchars(addslashes($venue['venue_name'])); ?>')">
+                                                <i class="fa-solid fa-star" style="color:#f6ad55;"></i> view rating
+                                            </a>
                                         </div>
                                         <button class="btn-primary" onclick="openBookingModal('<?php echo htmlspecialchars(addslashes($venue['venue_name'])); ?>', '<?php echo $venue['venue_id']; ?>', '<?php echo htmlspecialchars(addslashes($venue['venue_location'])); ?>', '<?php echo $venue['venue_capacity']; ?>')">
                                             Book Venue
@@ -1136,7 +1207,7 @@ if ($booking_result) {
         <table id="table-user-bookings">
             <tbody>
                 <?php foreach ($my_bookings as $b_row): ?>
-                    <tr>
+                    <tr data-venueid="<?php echo $b_row['venue_id']; ?>">
                         <td><?php echo htmlspecialchars($b_row['venue_name']); ?></td>
                         <td><?php echo htmlspecialchars($b_row['package_name'] ?? 'N/A'); ?></td>
                         <td><?php echo htmlspecialchars($b_row['event_date']); ?></td>
@@ -1149,9 +1220,12 @@ if ($booking_result) {
         </table>
     </div>
 
-    <!-- JAVASCRIPT ASAL -->
+    <!-- JAVASCRIPT -->
     <script>
         const dbPackages = <?php echo json_encode($packages_details); ?>;
+        const venueRatingsStorage = <?php echo json_encode($_SESSION['venue_ratings'] ?? []); ?>;
+        const venueRatingBreakdown = <?php echo json_encode($_SESSION['venue_rating_breakdown'] ?? []); ?>;
+        const hasRatedVenue = <?php echo json_encode($_SESSION['has_rated_venue'] ?? []); ?>;
 
         function switchTab(tabType) {
             const homeNav = document.getElementById('nav-home');
@@ -1261,6 +1335,7 @@ if ($booking_result) {
             } else {
                 const latestRow = rows[rows.length - 1];
                 const cells = latestRow.querySelectorAll('td');
+                const venueId = latestRow.getAttribute('data-venueid');
 
                 const statusText = cells[4].textContent.trim();
                 let statusColor = '#ed8936';
@@ -1275,14 +1350,104 @@ if ($booking_result) {
                     statusColor = '#e53e3e';
                 }
 
+                let ratingHtml = '';
+                if (st === 'completed') {
+                    const currentRating = venueRatingsStorage[venueId] || 0;
+                    const isAlreadyRated = hasRatedVenue[venueId];
+
+                    if (isAlreadyRated) {
+                        let starsDisplay = '';
+                        for (let i = 1; i <= 5; i++) {
+                            starsDisplay += `<i class="fa-solid fa-star ${i <= currentRating ? 'rated' : ''}" style="color: ${i <= currentRating ? '#f6ad55' : '#cbd5e0'};"></i>`;
+                        }
+                        ratingHtml = `
+                            <div class="booking-item-row" style="margin-top: 15px; border-top: 1px dashed var(--border-color); padding-top: 12px; text-align: center;">
+                                <div style="display: flex; justify-content: center; gap: 5px; font-size: 18px; margin-bottom: 5px;">${starsDisplay}</div>
+                                <p style="color: var(--primary-burgundy); font-weight: 700; font-size: 13.5px;">Thank you for your rating!</p>
+                            </div>
+                        `;
+                    } else {
+                        ratingHtml = `
+                            <div class="booking-item-row" style="margin-top: 15px; border-top: 1px dashed var(--border-color); padding-top: 10px;">
+                                <strong>Rate this Venue:</strong>
+                                <form method="POST" action="">
+                                    <input type="hidden" name="action_type" value="submit_rating">
+                                    <input type="hidden" name="rate_venue_id" value="${venueId}">
+                                    <input type="hidden" id="selected-rating-val" name="rating_stars" value="${currentRating}">
+                                    <div class="star-rating-container" id="star-container">
+                                        <i class="fa-solid fa-star ${currentRating >= 1 ? 'rated' : ''}" data-val="1" onclick="setRating(1)"></i>
+                                        <i class="fa-solid fa-star ${currentRating >= 2 ? 'rated' : ''}" data-val="2" onclick="setRating(2)"></i>
+                                        <i class="fa-solid fa-star ${currentRating >= 3 ? 'rated' : ''}" data-val="3" onclick="setRating(3)"></i>
+                                        <i class="fa-solid fa-star ${currentRating >= 4 ? 'rated' : ''}" data-val="4" onclick="setRating(4)"></i>
+                                        <i class="fa-solid fa-star ${currentRating >= 5 ? 'rated' : ''}" data-val="5" onclick="setRating(5)"></i>
+                                    </div>
+                                    <button type="submit" class="btn-primary" style="margin-top: 10px; padding: 6px 14px; font-size: 12px;">Submit Rating</button>
+                                </form>
+                            </div>
+                        `;
+                    }
+                }
+
                 targetDetailsContainer.innerHTML = `
+                <div class="booking-item-row"><strong>Venue Name :</strong> ${cells[0].textContent}</div>
                 <div class="booking-item-row"><strong>Event Date :</strong> ${cells[2].textContent}</div>
                 <div class="booking-item-row"><strong>Package :</strong> ${cells[1].textContent}</div>
                 <div class="booking-item-row"><strong>Guest :</strong> ${cells[3].textContent.replace(' pax', '')}</div>
                 <div class="booking-item-row"><strong>Status :</strong> <span style="color: ${statusColor}; font-weight: bold;">${statusText}</span></div>
                 <div class="booking-item-row"><strong>Booked On :</strong> ${cells[5].textContent}</div>
+                ${ratingHtml}
             `;
             }
+
+            document.getElementById('modal-my-bookings').style.display = 'flex';
+        }
+
+        function setRating(val) {
+            document.getElementById('selected-rating-val').value = val;
+            const stars = document.querySelectorAll('#star-container .fa-star');
+            stars.forEach((star, index) => {
+                if (index < val) {
+                    star.classList.add('rated');
+                } else {
+                    star.classList.remove('rated');
+                }
+            });
+        }
+
+        function previewVenueRating(venueId, venueName) {
+            switchTab('bookings');
+            document.getElementById('modal-booking-title').textContent = "Venue Rating: " + venueName;
+            const targetDetailsContainer = document.getElementById('dynamic-booking-details');
+            
+            const venueBreakdown = venueRatingBreakdown[venueId] || {1: 0, 2: 0, 3: 0, 4: 0, 5: 0};
+            let totalVotes = 0;
+            for (let i = 1; i <= 5; i++) {
+                totalVotes += venueBreakdown[i];
+            }
+
+            let breakdownHtml = '';
+            for (let star = 5; star >= 1; star--) {
+                const count = venueBreakdown[star];
+                const percentage = totalVotes > 0 ? (count / totalVotes) * 100 : 0;
+                breakdownHtml += `
+                    <div class="rating-breakdown-row">
+                        <div class="rating-star-label">${star}★</div>
+                        <div class="rating-bar-track">
+                            <div class="rating-bar-fill" style="width: ${percentage}%;"></div>
+                        </div>
+                        <div class="rating-count-label">${count}</div>
+                    </div>
+                `;
+            }
+
+            targetDetailsContainer.innerHTML = `
+                <div style="padding: 10px 0;">
+                    ${breakdownHtml}
+                    <div style="text-align: center; margin-top: 15px; font-size: 13px; color: var(--text-muted);">
+                        Total Votes: <strong>${totalVotes}</strong>
+                    </div>
+                </div>
+            `;
 
             document.getElementById('modal-my-bookings').style.display = 'flex';
         }

@@ -32,13 +32,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     $insert_venue = "INSERT INTO venue (venue_name, venue_location, venue_capacity, venue_price, owner_id, venue_image) 
                      VALUES ('$v_name', '$v_address', $v_capacity, 0.00, $owner_id, '$venue_image_filename')";
     if (mysqli_query($conn, $insert_venue)) {
-        $toast_message = "Venue Added Successfully!";
+        $_SESSION['toast_message'] = "Venue Added Successfully!";
+        header("Location: " . $_SERVER['PHP_SELF']);
+        exit();
     }
 }
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] == 'edit_venue') {
     $edit_v_id = intval($_POST['edit_venue_id']);
-    $edit_v_owner = mysqli_real_escape_string($conn, $_POST['edit_v_owner']); 
     $edit_v_name = mysqli_real_escape_string($conn, $_POST['edit_v_name']);
     $edit_v_address = mysqli_real_escape_string($conn, $_POST['edit_v_address']);
     $edit_v_capacity = intval($_POST['edit_v_capacity']);
@@ -53,12 +54,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
         move_uploaded_file($_FILES['edit_v_images']['tmp_name'][0], $target_dir . $venue_image_filename);
     }
 
-    $update_owner = "UPDATE venue_owner SET owner_name = '$edit_v_owner' WHERE owner_id = $owner_id";
-    mysqli_query($conn, $update_owner);
-
     $update_venue = "UPDATE venue SET venue_name = '$edit_v_name', venue_location = '$edit_v_address', venue_capacity = $edit_v_capacity, venue_image = '$venue_image_filename' WHERE venue_id = $edit_v_id AND owner_id = $owner_id";
     if (mysqli_query($conn, $update_venue)) {
-        $toast_message = "Venue Updated Successfully!";
+        $_SESSION['toast_message'] = "Venue Updated Successfully!";
+        header("Location: " . $_SERVER['PHP_SELF']);
+        exit();
     }
 }
 
@@ -77,7 +77,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
         $insert_package = "INSERT INTO package (package_name, package_price, package_inclusions, venue_id) 
                            VALUES ('$p_name', $p_price, '$p_inclusions', $v_id)";
         if (mysqli_query($conn, $insert_package)) {
-            $toast_message = "Package Added Successfully!";
+            $_SESSION['toast_message'] = "Package Added Successfully!";
+            header("Location: " . $_SERVER['PHP_SELF']);
+            exit();
         }
     } else {
         echo "<script>alert('Error: Venue name not found under your account. Please create the venue first.');</script>";
@@ -93,7 +95,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     $update_package = "UPDATE package SET package_name = '$edit_p_name', package_price = $edit_p_price, package_inclusions = '$edit_p_inclusions' 
                        WHERE package_id = $edit_p_id";
     if (mysqli_query($conn, $update_package)) {
-        $toast_message = "Package Updated Successfully!";
+        $_SESSION['toast_message'] = "Package Updated Successfully!";
+        header("Location: " . $_SERVER['PHP_SELF']);
+        exit();
     }
 }
 
@@ -104,6 +108,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     $update_status = "UPDATE booking SET bookingstatus = '$b_status' WHERE booking_id = $b_id";
     mysqli_query($conn, $update_status);
     exit();
+}
+
+if (isset($_SESSION['toast_message'])) {
+    $toast_message = $_SESSION['toast_message'];
+    unset($_SESSION['toast_message']);
 }
 ?>
 <!DOCTYPE html>
@@ -181,7 +190,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
         }
 
         .header::after {
-            content: '🏛️✨';
+            content: '🌸🍃';
             position: absolute;
             right: 20px;
             top: 50%;
@@ -774,7 +783,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     <div class="container">
         <div class="header">
             <div class="logo-area">
-                <div class="logo-icon">🏛️</div>
+                <div class="logo-icon">🌸</div>
                 <div>
                     <span class="logo-text-title">TheHallz - Venue Owner</span>
                 </div>
@@ -807,7 +816,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
             <table id="table-venues">
                 <thead>
                     <tr>
-                        <th>Owner Name</th>
                         <th>Venue Name</th>
                         <th>Full Address</th>
                         <th>Capacity</th>
@@ -818,14 +826,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                 </thead>
                 <tbody>
                     <?php
-                    $venue_query = "SELECT v.*, vo.owner_name FROM venue v 
-                                    JOIN venue_owner vo ON v.owner_id = vo.owner_id 
-                                    WHERE v.owner_id = $owner_id";
+                    $venue_query = "SELECT v.* FROM venue v WHERE v.owner_id = $owner_id";
                     $venue_result = mysqli_query($conn, $venue_query);
                     if (mysqli_num_rows($venue_result) > 0) {
                         while ($v_row = mysqli_fetch_assoc($venue_result)) {
                             echo "<tr>";
-                            echo "<td>" . htmlspecialchars($v_row['owner_name']) . "</td>";
                             echo "<td>" . htmlspecialchars($v_row['venue_name']) . "</td>";
                             echo "<td>" . htmlspecialchars($v_row['venue_location']) . "</td>";
                             echo "<td>" . number_format($v_row['venue_capacity']) . "</td>";
@@ -848,7 +853,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                             echo "</tr>";
                         }
                     } else {
-                        echo "<tr><td colspan='7' style='text-align:center;'>No venues registered yet.</td></tr>";
+                        echo "<tr><td colspan='6' style='text-align:center;'>No venues registered yet.</td></tr>";
                     }
                     ?>
                 </tbody>
@@ -972,11 +977,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
             <form id="form-add-venue" method="POST" enctype="multipart/form-data" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>">
                 <input type="hidden" name="action" value="add_venue">
                 <div class="form-group">
-                    <label>Owner Name</label>
-                    <!-- Diisi terus dengan nama akaun yang sedang log masuk dan disetkan kepada readonly -->
-                    <input type="text" id="v-owner-name" name="v_owner_name" value="<?php echo htmlspecialchars($owner_name); ?>" readonly style="background-color: #edf2f7; cursor: not-allowed;">
-                </div>
-                <div class="form-group">
                     <label>Venue Name</label>
                     <input type="text" id="v-name" name="v_name" required>
                 </div>
@@ -1006,9 +1006,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
             <form id="form-edit-venue" method="POST" enctype="multipart/form-data" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>">
                 <input type="hidden" name="action" value="edit_venue">
                 <input type="hidden" name="edit_venue_id" id="edit-venue-id" value="">
-                <div class="form-group">
+                <div class="form-group" style="display:none;">
                     <label>Owner Name</label>
-                    <input type="text" id="edit-v-owner" name="edit_v_owner" required>
+                    <input type="text" id="edit-v-owner" name="edit_v_owner">
                 </div>
                 <div class="form-group">
                     <label>Venue Name</label>
@@ -1164,10 +1164,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                 const venueId = buttonElement.getAttribute('data-venue-id');
                 document.getElementById('edit-venue-id').value = venueId;
 
-                document.getElementById('edit-v-owner').value = cells[0].textContent; 
-                document.getElementById('edit-v-name').value = cells[1].textContent;
-                document.getElementById('edit-v-address').value = cells[2].textContent;
-                document.getElementById('edit-v-capacity').value = cells[3].textContent.replace(/,/g, '');
+                document.getElementById('edit-v-name').value = cells[0].textContent;
+                document.getElementById('edit-v-address').value = cells[1].textContent;
+                document.getElementById('edit-v-capacity').value = cells[2].textContent.replace(/,/g, '');
             }
 
             if (modalId === 'modal-edit-package' && type === 'package') {

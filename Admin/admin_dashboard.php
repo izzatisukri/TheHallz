@@ -13,7 +13,6 @@ if ($venue_result && mysqli_num_rows($venue_result) > 0) {
 
 $booking_query = "SELECT venue_id, MONTHNAME(event_date) as b_month, YEAR(event_date) as b_year, COUNT(booking_id) as total_bookings 
                   FROM booking 
-                  WHERE bookingstatus = 'Confirmed' OR bookingstatus = 'Approved'
                   GROUP BY venue_id, b_month, b_year";
 $booking_result = mysqli_query($conn, $booking_query);
 
@@ -23,6 +22,33 @@ if ($booking_result && mysqli_num_rows($booking_result) > 0) {
         $booking_data[] = $row;
     }
 }
+
+// -------------------------------------------------------------------------
+// RATING REPORT QUERIES (Merujuk kepada table 'rating' dan column 'rating_star')
+// -------------------------------------------------------------------------
+$rating_summary_query = "SELECT COUNT(rating_id) as total_reviews, AVG(rating_star) as avg_rating FROM rating";
+$rating_summary_result = mysqli_query($conn, $rating_summary_query);
+$rating_summary = $rating_summary_result ? mysqli_fetch_assoc($rating_summary_result) : ['total_reviews' => 0, 'avg_rating' => 0];
+
+$total_reviews = $rating_summary['total_reviews'] ?? 0;
+$avg_rating = $total_reviews > 0 ? number_format($rating_summary['avg_rating'], 1) : '0.0';
+
+$rating_dist_query = "SELECT rating_star, COUNT(rating_id) as count FROM rating GROUP BY rating_star";
+$rating_dist_result = mysqli_query($conn, $rating_dist_query);
+
+$rating_counts = [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0];
+if ($rating_dist_result && mysqli_num_rows($rating_dist_result) > 0) {
+    while ($row = mysqli_fetch_assoc($rating_dist_result)) {
+        $rating_counts[(int)$row['rating_star']] = (int)$row['count'];
+    }
+}
+
+$max_rating_count = max($rating_counts) > 0 ? max($rating_counts) : 1;
+$pct_5 = ($rating_counts[5] / $max_rating_count) * 100;
+$pct_4 = ($rating_counts[4] / $max_rating_count) * 100;
+$pct_3 = ($rating_counts[3] / $max_rating_count) * 100;
+$pct_2 = ($rating_counts[2] / $max_rating_count) * 100;
+$pct_1 = ($rating_counts[1] / $max_rating_count) * 100;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -98,7 +124,7 @@ if ($booking_result && mysqli_num_rows($booking_result) > 0) {
     }
 
     .header::after {
-        content: '🌸🍃';
+        content: '💍✨';
         position: absolute;
         right: 20px;
         top: 50%;
@@ -225,7 +251,7 @@ if ($booking_result && mysqli_num_rows($booking_result) > 0) {
     .content-section {
         background-color: var(--white);
         color: var(--text-dark);
-        margin: 0 auto;
+        margin: 0 auto 30px auto;
         padding: 35px;
         border-radius: var(--radius-lg);
         width: 100%;
@@ -421,6 +447,94 @@ if ($booking_result && mysqli_num_rows($booking_result) > 0) {
         word-wrap: break-word;
     }
 
+    /* Rating Report Styles */
+    .rating-overview {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 20px;
+        margin-bottom: 40px;
+    }
+
+    .rating-card-box {
+        background-color: var(--bg-page);
+        padding: 20px 25px;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border-color);
+    }
+
+    .rating-card-box .label-text {
+        font-size: 13px;
+        color: var(--text-muted);
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+
+    .rating-card-box .main-value {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--text-dark);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .rating-card-box .sub-text {
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-top: 5px;
+    }
+
+    .rating-distribution-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text-dark);
+        margin-bottom: 6px;
+        font-family: 'Playfair Display', serif;
+    }
+
+    .rating-distribution-subtitle {
+        font-size: 13px;
+        color: var(--text-muted);
+        margin-bottom: 25px;
+    }
+
+    .rating-row-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+        gap: 15px;
+    }
+
+    .rating-star-label {
+        width: 75px;
+        font-size: 13.5px;
+        font-weight: 600;
+        color: var(--text-dark);
+    }
+
+    .rating-bar-bg {
+        flex-grow: 1;
+        background-color: var(--bg-page);
+        height: 14px;
+        border-radius: 30px;
+        overflow: hidden;
+        border: 1px solid var(--border-color);
+    }
+
+    .rating-bar-fill {
+        height: 100%;
+        background: linear-gradient(135deg, var(--primary-burgundy) 0%, var(--primary-dark) 100%);
+        border-radius: 30px;
+    }
+
+    .rating-count-value {
+        width: 35px;
+        text-align: right;
+        font-size: 13.5px;
+        font-weight: 600;
+        color: var(--text-dark);
+    }
+
     .modal-overlay {
         position: fixed;
         top: 0;
@@ -524,7 +638,7 @@ if ($booking_result && mysqli_num_rows($booking_result) > 0) {
 
 <div class="container">
     <div class="header">
-        <div class="logo-area">Wedding Hall Management - Admin</div>
+        <div class="logo-area">TheHallz - Admin</div>
         <div class="nav-links">
             <a href="admin_dashboard.php" class="active"><i class="fa-solid fa-chart-pie"></i> Dashboard</a>
             <a href="admin_venues.php"><i class="fa-solid fa-building"></i> Venues</a>
@@ -540,6 +654,7 @@ if ($booking_result && mysqli_num_rows($booking_result) > 0) {
         <p>Manage users, venues and generate reports.</p>
     </div>
 
+    <!-- Monthly Booking Report Section -->
     <div class="content-section">
         <div class="section-header">
             <h3>Monthly Booking Report</h3>
@@ -607,7 +722,65 @@ if ($booking_result && mysqli_num_rows($booking_result) > 0) {
                 ?>
             </div>
         </div>
+    </div>
 
+    <!-- Rating Report Section -->
+    <div class="content-section">
+        <div class="section-header">
+            <div>
+                <h3 style="margin-bottom: 5px;">Rating Report</h3>
+                <p style="font-size: 14px; color: var(--text-muted); font-weight: 400;">Overview of customer ratings for wedding venues</p>
+            </div>
+        </div>
+
+        <div class="rating-overview">
+            <div class="rating-card-box">
+                <div class="label-text">Total Reviews</div>
+                <div class="main-value"><?php echo $total_reviews; ?></div>
+                <div class="sub-text">All venue reviews</div>
+            </div>
+            <div class="rating-card-box">
+                <div class="label-text">Average Rating</div>
+                <div class="main-value">
+                    <?php echo $avg_rating; ?> 
+                    <i class="fa-solid fa-star" style="color: #ecc94b; font-size: 22px;"></i>
+                </div>
+                <div class="sub-text">Out of 5.0</div>
+            </div>
+        </div>
+
+        <div class="rating-distribution-title">Rating Distribution</div>
+        <div class="rating-distribution-subtitle">Number of reviews by star rating</div>
+
+        <div class="rating-row-item">
+            <div class="rating-star-label">5 Stars</div>
+            <div class="rating-bar-bg"><div class="rating-bar-fill" style="width: <?php echo $pct_5; ?>%;"></div></div>
+            <div class="rating-count-value"><?php echo $rating_counts[5]; ?></div>
+        </div>
+
+        <div class="rating-row-item">
+            <div class="rating-star-label">4 Stars</div>
+            <div class="rating-bar-bg"><div class="rating-bar-fill" style="width: <?php echo $pct_4; ?>%;"></div></div>
+            <div class="rating-count-value"><?php echo $rating_counts[4]; ?></div>
+        </div>
+
+        <div class="rating-row-item">
+            <div class="rating-star-label">3 Stars</div>
+            <div class="rating-bar-bg"><div class="rating-bar-fill" style="width: <?php echo $pct_3; ?>%;"></div></div>
+            <div class="rating-count-value"><?php echo $rating_counts[3]; ?></div>
+        </div>
+
+        <div class="rating-row-item">
+            <div class="rating-star-label">2 Stars</div>
+            <div class="rating-bar-bg"><div class="rating-bar-fill" style="width: <?php echo $pct_2; ?>%;"></div></div>
+            <div class="rating-count-value"><?php echo $rating_counts[2]; ?></div>
+        </div>
+
+        <div class="rating-row-item">
+            <div class="rating-star-label">1 Star</div>
+            <div class="rating-bar-bg"><div class="rating-bar-fill" style="width: <?php echo $pct_1; ?>%;"></div></div>
+            <div class="rating-count-value"><?php echo $rating_counts[1]; ?></div>
+        </div>
     </div>
 </div>
 

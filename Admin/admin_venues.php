@@ -622,7 +622,7 @@ $result = mysqli_query($conn, $query);
 
 <div class="container">
     <div class="header">
-        <div class="logo-area">Wedding Hall Management - Admin</div>
+        <div class="logo-area">TheHallz - Admin</div>
         <div class="nav-links">
             <a href="admin_dashboard.php"><i class="fa-solid fa-chart-pie"></i> Dashboard</a>
             <a href="admin_venues.php" class="active"><i class="fa-solid fa-building"></i> Venues</a>

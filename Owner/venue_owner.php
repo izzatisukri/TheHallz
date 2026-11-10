@@ -537,7 +537,8 @@ if (isset($_SESSION['toast_message'])) {
 
         .modal-box-add,
         .modal-box-delete,
-        .modal-box-logout {
+        .modal-box-logout,
+        .modal-box-rating {
             background-color: var(--white);
             width: 90%;
             border-radius: var(--radius-lg);
@@ -559,6 +560,11 @@ if (isset($_SESSION['toast_message'])) {
             text-align: center;
         }
 
+        .modal-box-rating {
+            max-width: 500px;
+            background-color: #fcf8fa;
+        }
+
         .modal-box-logout p, .modal-box-delete p {
             font-size: 15px;
             color: var(--text-dark);
@@ -567,13 +573,51 @@ if (isset($_SESSION['toast_message'])) {
             font-weight: 500;
         }
 
-        .modal-box-add h3 {
+        .modal-box-add h3, .modal-box-rating h3 {
             text-align: left;
             font-size: 24px;
             margin-bottom: 22px;
             font-weight: 600;
             color: var(--primary-burgundy);
             font-family: 'Playfair Display', serif;
+        }
+
+        .rating-bar-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+            font-size: 15px;
+            color: var(--primary-burgundy);
+            font-weight: 600;
+        }
+
+        .rating-star-label {
+            width: 35px;
+            text-align: right;
+            white-space: nowrap;
+        }
+
+        .rating-progress-bg {
+            flex: 1;
+            height: 10px;
+            background-color: #f0e6eb;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .rating-progress-fill {
+            height: 100%;
+            background-color: #7a224f;
+            border-radius: 10px;
+            width: 0%;
+            transition: width 0.4s ease;
+        }
+
+        .rating-count-num {
+            width: 35px;
+            text-align: left;
+            color: var(--text-dark);
         }
 
         .form-group {
@@ -820,6 +864,7 @@ if (isset($_SESSION['toast_message'])) {
                         <th>Full Address</th>
                         <th>Capacity</th>
                         <th>Venue Images</th>
+                        <th>Rating</th>
                         <th>Status</th>
                         <th>Actions</th>
                     </tr>
@@ -830,14 +875,38 @@ if (isset($_SESSION['toast_message'])) {
                     $venue_result = mysqli_query($conn, $venue_query);
                     if (mysqli_num_rows($venue_result) > 0) {
                         while ($v_row = mysqli_fetch_assoc($venue_result)) {
+                            $v_id = $v_row['venue_id'];
+                            
+                            $rating_counts = [5 => 0, 4 => 0, 3 => 0, 2 => 0, 1 => 0];
+
+                            // Kueri gabungan (JOIN) untuk memastikan data rating dibaca sama ada melalui venue_id terus atau melalui booking_id
+                            $rating_query = "SELECT r.rating_star 
+                                            FROM rating r 
+                                            LEFT JOIN booking b ON r.booking_id = b.booking_id 
+                                            WHERE r.venue_id = $v_id OR b.venue_id = $v_id";
+                            $rating_res = mysqli_query($conn, $rating_query);
+                            
+                            if ($rating_res && mysqli_num_rows($rating_res) > 0) {
+                                while ($r_row = mysqli_fetch_assoc($rating_res)) {
+                                    $star = intval($r_row['rating_star']);
+                                    if (isset($rating_counts[$star])) {
+                                        $rating_counts[$star]++;
+                                    }
+                                }
+                            }
+
                             echo "<tr>";
                             echo "<td>" . htmlspecialchars($v_row['venue_name']) . "</td>";
                             echo "<td>" . htmlspecialchars($v_row['venue_location']) . "</td>";
                             echo "<td>" . number_format($v_row['venue_capacity']) . "</td>";
                             
                             $img_path = "images/" . $v_row['venue_image'];
-                            echo "<td><button class='btn-edit' onclick=\"openGalleryModal(['$img_path'], '" . htmlspecialchars($v_row['venue_name']) . "')\">View</button></td>";
+                            echo "<td><button class='btn-edit' onclick=\"openGalleryModal(['$img_path'], '" . htmlspecialchars($v_row['venue_name'], ENT_QUOTES) . "')\">View</button></td>";
                             
+                            $rating_json = htmlspecialchars(json_encode($rating_counts), ENT_QUOTES);
+                            $v_name_safe = htmlspecialchars($v_row['venue_name'], ENT_QUOTES);
+                            echo "<td><button class='btn-edit' onclick=\"openRatingModal('$v_name_safe', $rating_json)\">View Rating</button></td>";
+
                             $v_status = isset($v_row['venue_status']) ? $v_row['venue_status'] : 'Pending'; 
                             $status_color = '#d69e2e';
                             if (strcasecmp($v_status, 'Approved') == 0) {
@@ -853,7 +922,7 @@ if (isset($_SESSION['toast_message'])) {
                             echo "</tr>";
                         }
                     } else {
-                        echo "<tr><td colspan='6' style='text-align:center;'>No venues registered yet.</td></tr>";
+                        echo "<tr><td colspan='7' style='text-align:center;'>No venues registered yet.</td></tr>";
                     }
                     ?>
                 </tbody>
@@ -967,6 +1036,20 @@ if (isset($_SESSION['toast_message'])) {
             <p id="image-counter" style="margin-bottom: 15px; color: var(--text-muted); font-size: 13.5px;"></p>
             <div class="form-actions" style="justify-content: center; margin-top: 0;">
                 <button type="button" class="btn-close-image" onclick="closeModal('modal-view-image')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-view-rating" class="modal-overlay">
+        <div class="modal-box-rating">
+            <h3 id="rating-venue-title" style="color: var(--primary-burgundy);">Rating Overview</h3>
+            
+            <div id="rating-bars-wrapper" style="margin-top: 20px; margin-bottom: 25px;">
+                <!-- Bar rating dijana secara automatik -->
+            </div>
+
+            <div class="form-actions" style="justify-content: center; margin-top: 0;">
+                <button type="button" class="btn-close-image" onclick="closeModal('modal-view-rating')">Close</button>
             </div>
         </div>
     </div>
@@ -1181,6 +1264,35 @@ if (isset($_SESSION['toast_message'])) {
                 document.getElementById('edit-p-price').value = cells[2].textContent.replace(/,/g, '');
                 document.getElementById('edit-p-inclusions').value = cells[3].textContent === '-' ? '' : cells[3].textContent;
             }
+        }
+
+        function openRatingModal(venueName, ratings) {
+            document.getElementById('rating-venue-title').textContent = venueName + " - Rating Overview";
+            const container = document.getElementById('rating-bars-wrapper');
+            container.innerHTML = '';
+
+            let totalReviews = 0;
+            for (let star = 1; star <= 5; star++) {
+                totalReviews += (ratings[star] || 0);
+            }
+
+            for (let star = 5; star >= 1; star--) {
+                const count = ratings[star] || 0;
+                const percentage = totalReviews > 0 ? (count / totalReviews) * 100 : 0;
+
+                const barHTML = `
+                    <div class="rating-bar-container">
+                        <div class="rating-star-label">${star}★</div>
+                        <div class="rating-progress-bg">
+                            <div class="rating-progress-fill" style="width: ${percentage}%;"></div>
+                        </div>
+                        <div class="rating-count-num">${count}</div>
+                    </div>
+                `;
+                container.innerHTML += barHTML;
+            }
+
+            document.getElementById('modal-view-rating').style.display = 'flex';
         }
 
         function openGalleryModal(images, venueName) {

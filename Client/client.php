@@ -66,22 +66,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type']) && $_PO
     }
 }
 
-// Handle Rating Submission via POST dengan Redirect (PRG Pattern) untuk elak form resubmission alert
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type']) && $_POST['action_type'] == 'submit_rating') {
-    $venue_id_rated = mysqli_real_escape_string($conn, $_POST['rate_venue_id']);
+    $venue_id_rated = intval($_POST['rate_venue_id']);
     $rating_stars = (int)$_POST['rating_stars'];
-    if (!isset($_SESSION['venue_ratings'])) {
-        $_SESSION['venue_ratings'] = [];
-    }
-    if (!isset($_SESSION['venue_rating_breakdown'][$venue_id_rated])) {
-        $_SESSION['venue_rating_breakdown'][$venue_id_rated] = [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0];
-    }
     
-    if (!isset($_SESSION['has_rated_venue'][$venue_id_rated])) {
-        $_SESSION['venue_rating_breakdown'][$venue_id_rated][$rating_stars]++;
-        $_SESSION['has_rated_venue'][$venue_id_rated] = true;
+    $find_bk = mysqli_query($conn, "SELECT booking_id FROM booking WHERE client_id = '$client_id' AND venue_id = '$venue_id_rated' ORDER BY booking_id DESC LIMIT 1");
+    if ($find_bk && mysqli_num_rows($find_bk) > 0) {
+        $bk_row = mysqli_fetch_assoc($find_bk);
+        $booking_id_val = $bk_row['booking_id'];
+
+        $insert_rating_sql = "INSERT INTO rating (booking_id, venue_id, client_id, rating_star) 
+                              VALUES ('$booking_id_val', '$venue_id_rated', '$client_id', '$rating_stars')
+                              ON DUPLICATE KEY UPDATE rating_star = '$rating_stars'";
+        mysqli_query($conn, $insert_rating_sql);
     }
-    $_SESSION['venue_ratings'][$venue_id_rated] = $rating_stars;
     
     header("Location: " . $_SERVER['PHP_SELF']);
     exit();
@@ -120,6 +118,35 @@ $booking_result = mysqli_query($conn, $booking_sql);
 if ($booking_result) {
     while ($row = mysqli_fetch_assoc($booking_result)) {
         $my_bookings[] = $row;
+    }
+}
+
+$db_venue_ratings = [];
+$db_venue_rating_breakdown = [];
+$db_has_rated_venue = [];
+
+$rating_fetch_q = "SELECT * FROM rating WHERE client_id = '$client_id'";
+$rating_fetch_res = mysqli_query($conn, $rating_fetch_q);
+if ($rating_fetch_res) {
+    while ($r_row = mysqli_fetch_assoc($rating_fetch_res)) {
+        $v_id = $r_row['venue_id'];
+        $db_venue_ratings[$v_id] = $r_row['rating_star'];
+        $db_has_rated_venue[$v_id] = true;
+    }
+}
+
+$all_ratings_q = "SELECT venue_id, rating_star FROM rating";
+$all_ratings_res = mysqli_query($conn, $all_ratings_q);
+if ($all_ratings_res) {
+    while ($ar_row = mysqli_fetch_assoc($all_ratings_res)) {
+        $v_id = $ar_row['venue_id'];
+        $star = (int)$ar_row['rating_star'];
+        if (!isset($db_venue_rating_breakdown[$v_id])) {
+            $db_venue_rating_breakdown[$v_id] = [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0];
+        }
+        if (isset($db_venue_rating_breakdown[$v_id][$star])) {
+            $db_venue_rating_breakdown[$v_id][$star]++;
+        }
     }
 }
 ?>
@@ -520,7 +547,7 @@ if ($booking_result) {
             gap: 15px;
         }
 
-        /* FORM ELEMENTS (DISESUAIKAN KOTAK CARIAN PANJANG) */
+        /* FORM ELEMENTS */
         .form-group {
             margin-bottom: 15px;
         }
@@ -941,7 +968,7 @@ if ($booking_result) {
             margin-top: 15px;
         }
 
-        /* RATING STARS CSS */
+        /* RATING STARS CSS (KUNING ASAL KEPADA BINTANG INTERAKTIF MY BOOKINGS & VENUE CARD) */
         .star-rating-container {
             display: flex;
             gap: 5px;
@@ -956,7 +983,7 @@ if ($booking_result) {
             color: #f6ad55;
         }
 
-        /* BREAKDOWN RATING BARS STYLE */
+        /* BREAKDOWN RATING BARS STYLE (DIUBAH KEPADA WARNA #7a224f UNTUK VIEW RATING MODAL SAHAJA) */
         .rating-breakdown-row {
             display: flex;
             align-items: center;
@@ -969,17 +996,18 @@ if ($booking_result) {
             width: 35px;
             text-align: right;
             font-weight: 600;
+            color: #7a224f;
         }
         .rating-bar-track {
             flex-grow: 1;
             height: 8px;
-            background-color: #e2e8f0;
+            background-color: #f0e6eb;
             border-radius: 4px;
             overflow: hidden;
         }
         .rating-bar-fill {
             height: 100%;
-            background-color: #c05621;
+            background-color: #7a224f;
             border-radius: 4px;
         }
         .rating-count-label {
@@ -1223,9 +1251,9 @@ if ($booking_result) {
     <!-- JAVASCRIPT -->
     <script>
         const dbPackages = <?php echo json_encode($packages_details); ?>;
-        const venueRatingsStorage = <?php echo json_encode($_SESSION['venue_ratings'] ?? []); ?>;
-        const venueRatingBreakdown = <?php echo json_encode($_SESSION['venue_rating_breakdown'] ?? []); ?>;
-        const hasRatedVenue = <?php echo json_encode($_SESSION['has_rated_venue'] ?? []); ?>;
+        const venueRatingsStorage = <?php echo json_encode($db_venue_ratings); ?>;
+        const venueRatingBreakdown = <?php echo json_encode($db_venue_rating_breakdown); ?>;
+        const hasRatedVenue = <?php echo json_encode($db_has_rated_venue); ?>;
 
         function switchTab(tabType) {
             const homeNav = document.getElementById('nav-home');

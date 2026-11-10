@@ -556,7 +556,7 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
 
     <div class="container">
         <div class="header">
-            <div class="logo-area">Wedding Hall Management - Admin</div>
+            <div class="logo-area">TheHallz - Admin</div>
             <div class="nav-links">
                 <a href="admin_dashboard.php"><i class="fa-solid fa-chart-pie"></i> Dashboard</a>
                 <a href="admin_venues.php"><i class="fa-solid fa-building"></i> Venues</a>

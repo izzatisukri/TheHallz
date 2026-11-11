@@ -520,7 +520,7 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
 
         .toast-notification {
             position: fixed;
-            top: 30px;
+            bottom: 30px;
             right: 30px;
             background-color: var(--white);
             color: var(--text-dark);

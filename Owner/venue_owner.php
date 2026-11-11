@@ -750,9 +750,10 @@ if (isset($_SESSION['toast_message'])) {
             background-color: #c53030;
         }
 
+        /* TOAST NOTIFICATION (DIALIH KE BAWAH) */
         .toast-notification {
             position: fixed;
-            top: 30px;
+            bottom: 30px;
             right: 30px;
             background-color: var(--white);
             color: var(--text-dark);
@@ -765,7 +766,7 @@ if (isset($_SESSION['toast_message'])) {
             border-left: 5px solid var(--primary-burgundy);
             visibility: hidden;
             opacity: 0;
-            transform: translateY(-15px);
+            transform: translateY(15px);
             transition: all 0.3s ease;
         }
 

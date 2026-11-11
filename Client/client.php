@@ -867,10 +867,10 @@ if ($all_ratings_res) {
             cursor: pointer;
         }
 
-        /* TOAST NOTIFICATION */
+        /* TOAST NOTIFICATION (DIALIH KE BAWAH) */
         .toast-notification {
             position: fixed;
-            top: 30px;
+            bottom: 30px;
             right: 30px;
             background-color: var(--white);
             color: var(--text-dark);
@@ -886,7 +886,7 @@ if ($all_ratings_res) {
             border-left: 5px solid var(--primary-burgundy);
             visibility: hidden;
             opacity: 0;
-            transform: translateY(-15px);
+            transform: translateY(15px);
             transition: all 0.3s ease;
         }
 
@@ -1304,13 +1304,16 @@ if ($all_ratings_res) {
 
         function searchVenueMap() {
             const searchInput = document.getElementById('filter-area').value.trim().toLowerCase();
-            currentAreaFilter = searchInput;
             const mapFrame = document.getElementById('map-frame');
 
-            if (searchInput !== '') {
-                const formattedQuery = encodeURIComponent(searchInput);
-                mapFrame.src = `https://maps.google.com/maps?q=${formattedQuery}%2C%20Malaysia&t=&z=14&ie=UTF8&iwloc=&output=embed`;
+            if (searchInput === '') {
+                triggerToast("Please enter a location or keyword to search first.");
+                return;
             }
+
+            currentAreaFilter = searchInput;
+            const formattedQuery = encodeURIComponent(searchInput);
+            mapFrame.src = `https://maps.google.com/maps?q=${formattedQuery}%2C%20Malaysia&t=&z=14&ie=UTF8&iwloc=&output=embed`;
 
             applyFilters();
         }

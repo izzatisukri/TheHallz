@@ -380,7 +380,7 @@
 
     .toast-notification {
         position: fixed;
-        top: 30px;
+        bottom: 30px;
         right: 30px;
         background-color: var(--white);
         color: var(--text-dark);

@@ -968,7 +968,7 @@ if ($all_ratings_res) {
             margin-top: 15px;
         }
 
-        /* RATING STARS CSS (KUNING ASAL KEPADA BINTANG INTERAKTIF MY BOOKINGS & VENUE CARD) */
+        /* RATING STARS CSS */
         .star-rating-container {
             display: flex;
             gap: 5px;
@@ -983,7 +983,7 @@ if ($all_ratings_res) {
             color: #f6ad55;
         }
 
-        /* BREAKDOWN RATING BARS STYLE (DIUBAH KEPADA WARNA #7a224f UNTUK VIEW RATING MODAL SAHAJA) */
+        /* BREAKDOWN RATING BARS STYLE */
         .rating-breakdown-row {
             display: flex;
             align-items: center;
@@ -1048,7 +1048,7 @@ if ($all_ratings_res) {
         <div class="content-section">
             <div class="home-layout">
 
-                <!-- KANAN: BORANG TAPISAN -->
+                <!-- KANAN: BORANG TAPISAN & PACKAGE FILTER -->
                 <div class="search-filter-box">
                     <div class="section-title">Filter Options</div>
 
@@ -1066,10 +1066,25 @@ if ($all_ratings_res) {
                         </button>
                     </form>
 
+                    <!-- PACKAGE FILTER INTERFACE (BAWAH SEARCH & UPDATE MAP) -->
+                    <div style="margin-top: 22px; border-top: 1px solid var(--border-color); padding-top: 18px;">
+                        <label style="display: block; font-size: 13px; font-weight: 700; margin-bottom: 10px; color: var(--primary-burgundy);">Filter by Package</label>
+                        <div id="package-filter-pills" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                            <button type="button" class="pkg-pill active" onclick="filterByPackage('all', this)" style="padding: 7px 14px; border-radius: 20px; border: 1px solid var(--primary-burgundy); background: var(--primary-burgundy); color: white; font-size: 12.5px; font-weight: 600; cursor: pointer; transition: all 0.2s;">All Package</button>
+                            <button type="button" class="pkg-pill" onclick="filterByPackage('basic package', this)" style="padding: 7px 14px; border-radius: 20px; border: 1px solid var(--border-color); background: var(--bg-page); color: var(--text-dark); font-size: 12.5px; font-weight: 600; cursor: pointer; transition: all 0.2s;">Basic Package</button>
+                            <button type="button" class="pkg-pill" onclick="filterByPackage('standard package', this)" style="padding: 7px 14px; border-radius: 20px; border: 1px solid var(--border-color); background: var(--bg-page); color: var(--text-dark); font-size: 12.5px; font-weight: 600; cursor: pointer; transition: all 0.2s;">Standard Package</button>
+                            <button type="button" class="pkg-pill" onclick="filterByPackage('premium package', this)" style="padding: 7px 14px; border-radius: 20px; border: 1px solid var(--border-color); background: var(--bg-page); color: var(--text-dark); font-size: 12.5px; font-weight: 600; cursor: pointer; transition: all 0.2s;">Premium Package</button>
+                            <button type="button" class="pkg-pill" onclick="filterByPackage('no package', this)" style="padding: 7px 14px; border-radius: 20px; border: 1px solid var(--border-color); background: var(--bg-page); color: var(--text-dark); font-size: 12.5px; font-weight: 600; cursor: pointer; transition: all 0.2s;">No Package</button>
+                        </div>
+                    </div>
+
                     <div class="venue-list-wrapper" id="venue-list-container">
                         <?php if (count($venues_list) > 0): ?>
                             <?php foreach ($venues_list as $venue): ?>
-                                <div class="venue-row-card" data-area="<?php echo htmlspecialchars(strtolower($venue['venue_location'])); ?>" data-capacity="<?php echo $venue['venue_capacity']; ?>">
+                                <?php 
+                                    $pkg_val = !empty($venue['package_name']) ? strtolower($venue['package_name']) : 'no package';
+                                ?>
+                                <div class="venue-row-card" data-area="<?php echo htmlspecialchars(strtolower($venue['venue_location'])); ?>" data-capacity="<?php echo $venue['venue_capacity']; ?>" data-package="<?php echo htmlspecialchars($pkg_val); ?>">
                                     <div class="venue-card-content">
                                         <?php 
                                             $img_src = !empty($venue['venue_image']) ? 'images/' . $venue['venue_image'] : 'images/weddingVenue.jpg';
@@ -1255,6 +1270,9 @@ if ($all_ratings_res) {
         const venueRatingBreakdown = <?php echo json_encode($db_venue_rating_breakdown); ?>;
         const hasRatedVenue = <?php echo json_encode($db_has_rated_venue); ?>;
 
+        let currentPackageFilter = 'all';
+        let currentAreaFilter = '';
+
         function switchTab(tabType) {
             const homeNav = document.getElementById('nav-home');
             const bookingsNav = document.getElementById('nav-bookings');
@@ -1267,36 +1285,66 @@ if ($all_ratings_res) {
             }
         }
 
+        function filterByPackage(pkgType, btn) {
+            currentPackageFilter = pkgType;
+            
+            document.querySelectorAll('.pkg-pill').forEach(pill => {
+                pill.style.background = 'var(--bg-page)';
+                pill.style.color = 'var(--text-dark)';
+                pill.style.borderColor = 'var(--border-color)';
+                pill.classList.remove('active');
+            });
+            btn.style.background = 'var(--primary-burgundy)';
+            btn.style.color = 'white';
+            btn.style.borderColor = 'var(--primary-burgundy)';
+            btn.classList.add('active');
+
+            applyFilters();
+        }
+
         function searchVenueMap() {
             const searchInput = document.getElementById('filter-area').value.trim().toLowerCase();
+            currentAreaFilter = searchInput;
             const mapFrame = document.getElementById('map-frame');
 
-            if (searchInput === '') {
-                alert('Please enter an area or venue name first!');
-                return;
+            if (searchInput !== '') {
+                const formattedQuery = encodeURIComponent(searchInput);
+                mapFrame.src = `https://maps.google.com/maps?q=${formattedQuery}%2C%20Malaysia&t=&z=14&ie=UTF8&iwloc=&output=embed`;
             }
 
-            const formattedQuery = encodeURIComponent(searchInput);
-            mapFrame.src = `https://maps.google.com/maps?q=${formattedQuery}%2C%20Malaysia&t=&z=14&ie=UTF8&iwloc=&output=embed`;
+            applyFilters();
+        }
 
+        function applyFilters() {
             const venueCards = document.querySelectorAll('.venue-row-card');
             let foundCount = 0;
 
             venueCards.forEach(card => {
                 const venueArea = card.getAttribute('data-area').toLowerCase();
                 const venueName = card.querySelector('h4').textContent.toLowerCase();
+                const venuePkg = card.getAttribute('data-package').toLowerCase();
 
-                if (venueArea.includes(searchInput) || venueName.includes(searchInput)) {
+                const matchesArea = currentAreaFilter === '' || venueArea.includes(currentAreaFilter) || venueName.includes(currentAreaFilter);
+                
+                let matchesPkg = true;
+                if (currentPackageFilter !== 'all') {
+                    matchesPkg = venuePkg.includes(currentPackageFilter);
+                }
+
+                if (matchesArea && matchesPkg) {
                     card.style.display = 'flex';
                     foundCount++;
                 } else {
                     card.style.display = 'none';
                 }
             });
-            if (foundCount === 0) {
-                triggerToast(`Map updated, but no venues found matching: ${document.getElementById('filter-area').value}`);
-            } else {
-                triggerToast(`Map updated & filtered: ${foundCount} venue(s) found!`);
+
+            if (currentAreaFilter !== '' || currentPackageFilter !== 'all') {
+                if (foundCount === 0) {
+                    triggerToast(`No venues found matching your filter criteria.`);
+                } else {
+                    triggerToast(`Filtered: ${foundCount} venue(s) found!`);
+                }
             }
         }
 

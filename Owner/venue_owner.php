@@ -66,7 +66,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     $p_venue_name = mysqli_real_escape_string($conn, $_POST['p_venue']);
     $p_name = mysqli_real_escape_string($conn, $_POST['p_name']);
     $p_price = floatval($_POST['p_price']);
-    $p_inclusions = mysqli_real_escape_string($conn, $_POST['p_inclusions']);
+    
+    // Jika No Package dipilih, auto-set inclusion khusus untuk harga sewa dewan
+    if ($p_name === 'No Package') {
+        $p_inclusions = "This venue does not provide any package. The stated price is strictly for hall rental only. Clients may customize or arrange their own event arrangements.";
+    } else {
+        $p_inclusions = mysqli_real_escape_string($conn, $_POST['p_inclusions']);
+    }
 
     $find_venue = "SELECT venue_id FROM venue WHERE venue_name = '$p_venue_name' AND owner_id = $owner_id LIMIT 1";
     $venue_res = mysqli_query($conn, $find_venue);
@@ -90,7 +96,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     $edit_p_id = intval($_POST['edit_package_id']);
     $edit_p_name = mysqli_real_escape_string($conn, $_POST['edit_p_name']);
     $edit_p_price = floatval($_POST['edit_p_price']);
-    $edit_p_inclusions = mysqli_real_escape_string($conn, $_POST['edit_p_inclusions']);
+    
+    if ($edit_p_name === 'No Package') {
+        $edit_p_inclusions = "This venue does not provide any package. The stated price is strictly for hall rental only. Clients may customize or arrange their own event arrangements.";
+    } else {
+        $edit_p_inclusions = mysqli_real_escape_string($conn, $_POST['edit_p_inclusions']);
+    }
 
     $update_package = "UPDATE package SET package_name = '$edit_p_name', package_price = $edit_p_price, package_inclusions = '$edit_p_inclusions' 
                        WHERE package_id = $edit_p_id";
@@ -520,6 +531,14 @@ if (isset($_SESSION['toast_message'])) {
             box-shadow: 0 0 0 3.5px rgba(122, 34, 79, 0.12);
         }
 
+    #filter-month, #filter-year {
+    color: #2d3748; /* Warna kelabu untuk teks 'All Months' / 'All Years' */
+    }
+
+    #filter-month option, #filter-year option {
+    color: #2d3748; 
+    }
+
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -879,7 +898,6 @@ if (isset($_SESSION['toast_message'])) {
                             
                             $rating_counts = [5 => 0, 4 => 0, 3 => 0, 2 => 0, 1 => 0];
 
-                            // Kueri gabungan (JOIN) untuk memastikan data rating dibaca sama ada melalui venue_id terus atau melalui booking_id
                             $rating_query = "SELECT r.rating_star 
                                             FROM rating r 
                                             LEFT JOIN booking b ON r.booking_id = b.booking_id 
@@ -973,6 +991,32 @@ if (isset($_SESSION['toast_message'])) {
         <div id="section-bookings" class="content-section">
             <div class="section-header">
                 <h3>Booking Requests</h3>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <select id="filter-month" class="select-status" onchange="filterBookings()">
+                        <option value="">All Months</option>
+                        <option value="01">January</option>
+                        <option value="02">February</option>
+                        <option value="03">March</option>
+                        <option value="04">April</option>
+                        <option value="05">May</option>
+                        <option value="06">June</option>
+                        <option value="07">July</option>
+                        <option value="08">August</option>
+                        <option value="09">September</option>
+                        <option value="10">October</option>
+                        <option value="11">November</option>
+                        <option value="12">December</option>
+                    </select>
+                    <select id="filter-year" class="select-status" onchange="filterBookings()">
+                        <option value="">All Years</option>
+                        <option value="2025">2025</option>
+                        <option value="2026">2026</option>
+                        <option value="2027">2027</option>
+                        <option value="2028">2028</option>
+                        <option value="2029">2029</option>
+                        <option value="2030">2030</option>
+                    </select>
+                </div>
             </div>
             <table id="table-bookings">
                 <thead>
@@ -1044,9 +1088,7 @@ if (isset($_SESSION['toast_message'])) {
         <div class="modal-box-rating">
             <h3 id="rating-venue-title" style="color: var(--primary-burgundy);">Rating Overview</h3>
             
-            <div id="rating-bars-wrapper" style="margin-top: 20px; margin-bottom: 25px;">
-                <!-- Bar rating dijana secara automatik -->
-            </div>
+            <div id="rating-bars-wrapper" style="margin-top: 20px; margin-bottom: 25px;"></div>
 
             <div class="form-actions" style="justify-content: center; margin-top: 0;">
                 <button type="button" class="btn-close-image" onclick="closeModal('modal-view-rating')">Close</button>
@@ -1117,22 +1159,39 @@ if (isset($_SESSION['toast_message'])) {
         </div>
     </div>
 
+    <!-- MODAL ADD PACKAGE -->
     <div id="modal-add-package" class="modal-overlay">
         <div class="modal-box-add">
             <h3>Add New Package</h3>
             <form id="form-add-package" method="POST" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>">
                 <input type="hidden" name="action" value="add_package">
                 <div class="form-group">
-                    <label>Enter Your Venue Name</label>
-                    <input type="text" id="p-venue" name="p_venue" placeholder="e.g., Dewan Serbaguna Telok Mas" required>
+                    <label>Venue Name</label>
+                    <select id="p-venue" name="p_venue" required>
+                        <option value="" disabled selected>Select your venue</option>
+                        <?php
+                        $v_dropdown_res = mysqli_query($conn, "SELECT venue_name FROM venue WHERE owner_id = $owner_id");
+                        if ($v_dropdown_res && mysqli_num_rows($v_dropdown_res) > 0) {
+                            while ($v_d_row = mysqli_fetch_assoc($v_dropdown_res)) {
+                                echo "<option value='" . htmlspecialchars($v_d_row['venue_name']) . "'>" . htmlspecialchars($v_d_row['venue_name']) . "</option>";
+                            }
+                        }
+                        ?>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label>Package Name</label>
-                    <input type="text" id="p-name" name="p_name" placeholder="e.g., Basic, Silver, Gold" required>
+                    <select id="p-name" name="p_name" onchange="handlePackageSelection('add')" required>
+                        <option value="" disabled selected>Select package name</option>
+                        <option value="Basic Package">Basic Package</option>
+                        <option value="Standard Package">Standard Package</option>
+                        <option value="Premium Package">Premium Package</option>
+                        <option value="No Package">No Package</option>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label>Price (RM)</label>
-                    <input type="text" id="p-price" name="p_price" required>
+                    <input type="text" id="p-price" name="p_price" placeholder="e.g., 5000.00" required>
                 </div>
                 <div class="form-group">
                     <label>Package Inclusions</label>
@@ -1146,6 +1205,7 @@ if (isset($_SESSION['toast_message'])) {
         </div>
     </div>
 
+    <!-- MODAL EDIT PACKAGE -->
     <div id="modal-edit-package" class="modal-overlay">
         <div class="modal-box-add">
             <h3>Edit Package</h3>
@@ -1153,19 +1213,18 @@ if (isset($_SESSION['toast_message'])) {
                 <input type="hidden" name="action" value="edit_package">
                 <input type="hidden" name="edit_package_id" id="edit-package-id" value="">
                 <div class="form-group">
-                    <label>Select Venue</label>
-                    <select id="edit-p-venue" name="edit_p_venue" required>
-                        <?php
-                        $v_options_res = mysqli_query($conn, "SELECT venue_name FROM venue WHERE owner_id = $owner_id");
-                        while ($opt = mysqli_fetch_assoc($v_options_res)) {
-                            echo "<option value='" . htmlspecialchars($opt['venue_name']) . "'>" . htmlspecialchars($opt['venue_name']) . "</option>";
-                        }
-                        ?>
-                    </select>
+                    <label>Venue Name</label>
+                    <input type="text" id="edit-p-venue" name="edit_p_venue" disabled>
                 </div>
                 <div class="form-group">
                     <label>Package Name</label>
-                    <input type="text" id="edit-p-name" name="edit_p_name" required>
+                    <select id="edit-p-name" name="edit_p_name" onchange="handlePackageSelection('edit')" required>
+                        <option value="" disabled selected>Select package name</option>
+                        <option value="Basic Package">Basic Package</option>
+                        <option value="Standard Package">Standard Package</option>
+                        <option value="Premium Package">Premium Package</option>
+                        <option value="No Package">No Package</option>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label>Price (RM)</label>
@@ -1219,6 +1278,38 @@ if (isset($_SESSION['toast_message'])) {
             <?php endif; ?>
         };
 
+        // Fungsi Auto-Update Inclusions untuk "No Package" (Harga dibenarkan isi untuk sewa dewan)
+        function handlePackageSelection(mode) {
+            const noPackageInclusionText = "This venue does not provide any package. The stated price is strictly for hall rental only. Clients may customize or arrange their own event arrangements.";
+            
+            if (mode === 'add') {
+                const selectEl = document.getElementById('p-name');
+                const inclusionEl = document.getElementById('p-inclusions');
+
+                if (selectEl.value === 'No Package') {
+                    inclusionEl.value = noPackageInclusionText;
+                    inclusionEl.readOnly = true;
+                    inclusionEl.style.backgroundColor = '#edf2f7';
+                } else {
+                    inclusionEl.readOnly = false;
+                    inclusionEl.style.backgroundColor = '';
+                    if (inclusionEl.value === noPackageInclusionText) inclusionEl.value = '';
+                }
+            } else if (mode === 'edit') {
+                const selectEl = document.getElementById('edit-p-name');
+                const inclusionEl = document.getElementById('edit-p-inclusions');
+
+                if (selectEl.value === 'No Package') {
+                    inclusionEl.value = noPackageInclusionText;
+                    inclusionEl.readOnly = true;
+                    inclusionEl.style.backgroundColor = '#edf2f7';
+                } else {
+                    inclusionEl.readOnly = false;
+                    inclusionEl.style.backgroundColor = '';
+                }
+            }
+        }
+
         function switchTab(tabName) {
             const sections = document.querySelectorAll('.content-section');
             sections.forEach(section => section.classList.remove('active-section'));
@@ -1230,6 +1321,13 @@ if (isset($_SESSION['toast_message'])) {
 
         function openModal(modalId, type = '', buttonElement = null) {
             document.getElementById(modalId).style.display = 'flex';
+            
+            if (modalId === 'modal-add-package') {
+                document.getElementById('form-add-package').reset();
+                document.getElementById('p-inclusions').readOnly = false;
+                document.getElementById('p-inclusions').style.backgroundColor = '';
+            }
+
             if (modalId === 'modal-delete-confirmation') {
                 rowToDelete = buttonElement.closest('tr');
                 const promptText = document.getElementById('delete-prompt-text');
@@ -1263,6 +1361,8 @@ if (isset($_SESSION['toast_message'])) {
                 document.getElementById('edit-p-name').value = cells[1].textContent;
                 document.getElementById('edit-p-price').value = cells[2].textContent.replace(/,/g, '');
                 document.getElementById('edit-p-inclusions').value = cells[3].textContent === '-' ? '' : cells[3].textContent;
+
+                handlePackageSelection('edit');
             }
         }
 
@@ -1376,6 +1476,34 @@ if (isset($_SESSION['toast_message'])) {
             document.getElementById('count-confirmed').textContent = confirmedCount + " Confirmed Bookings";
             document.getElementById('count-completed').textContent = completedCount + " Completed Bookings";
             document.getElementById('count-cancelled').textContent = cancelledCount + " Cancelled Bookings";
+        }
+
+        function filterBookings() {
+            const selectedMonth = document.getElementById('filter-month').value;
+            const selectedYear = document.getElementById('filter-year').value;
+            const table = document.getElementById('table-bookings');
+            const tbody = table.getElementsByTagName('tbody')[0];
+            const rows = tbody.getElementsByTagName('tr');
+
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                if (row.cells.length < 5) continue;
+                const eventDateCell = row.cells[4].textContent.trim(); // Event Date column
+                if (eventDateCell) {
+                    const parts = eventDateCell.split('-');
+                    const year = parts[0];
+                    const month = parts[1];
+
+                    let matchMonth = !selectedMonth || month === selectedMonth;
+                    let matchYear = !selectedYear || year === selectedYear;
+
+                    if (matchMonth && matchYear) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                }
+            }
         }
 
         function triggerToast(message) {

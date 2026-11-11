@@ -412,6 +412,15 @@ $result = mysqli_query($conn, $query);
             </div>
         </div>
 
+        <!-- PACKAGE FILTER BUTTONS (PILLS) -->
+        <div style="margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 8px;">
+            <button type="button" class="pkg-pill active" onclick="filterByPackage('all', this)" style="padding: 7px 16px; border-radius: 20px; border: 1px solid var(--primary-burgundy); background: var(--primary-burgundy); color: white; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;">All Package</button>
+            <button type="button" class="pkg-pill" onclick="filterByPackage('basic package', this)" style="padding: 7px 16px; border-radius: 20px; border: 1px solid var(--border-color); background: var(--bg-page); color: var(--text-dark); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;">Basic Package</button>
+            <button type="button" class="pkg-pill" onclick="filterByPackage('standard package', this)" style="padding: 7px 16px; border-radius: 20px; border: 1px solid var(--border-color); background: var(--bg-page); color: var(--text-dark); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;">Standard Package</button>
+            <button type="button" class="pkg-pill" onclick="filterByPackage('premium package', this)" style="padding: 7px 16px; border-radius: 20px; border: 1px solid var(--border-color); background: var(--bg-page); color: var(--text-dark); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;">Premium Package</button>
+            <button type="button" class="pkg-pill" onclick="filterByPackage('no package', this)" style="padding: 7px 16px; border-radius: 20px; border: 1px solid var(--border-color); background: var(--bg-page); color: var(--text-dark); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;">No Package</button>
+        </div>
+
         <table id="table-packages">
             <thead>
                 <tr>
@@ -425,8 +434,9 @@ $result = mysqli_query($conn, $query);
                 <?php
                 if ($result && mysqli_num_rows($result) > 0) {
                     while($row = mysqli_fetch_assoc($result)) {
+                        $pkg_name_lower = !empty($row['package_name']) ? strtolower(trim($row['package_name'])) : 'no package';
                         ?>
-                        <tr>
+                        <tr class="package-row" data-package="<?php echo htmlspecialchars($pkg_name_lower); ?>">
                             <td><?php echo htmlspecialchars($row['venue_name']); ?></td>
                             <td><?php echo htmlspecialchars($row['package_name']); ?></td>
                             <td><?php echo htmlspecialchars(number_format($row['package_price'], 2)); ?></td>
@@ -480,6 +490,29 @@ $result = mysqli_query($conn, $query);
 
     function confirmLogout() {
         window.location.href = 'index.php'; 
+    }
+
+    function filterByPackage(pkgType, btn) {
+        document.querySelectorAll('.pkg-pill').forEach(pill => {
+            pill.style.background = 'var(--bg-page)';
+            pill.style.color = 'var(--text-dark)';
+            pill.style.borderColor = 'var(--border-color)';
+            pill.classList.remove('active');
+        });
+        btn.style.background = 'var(--primary-burgundy)';
+        btn.style.color = 'white';
+        btn.style.borderColor = 'var(--primary-burgundy)';
+        btn.classList.add('active');
+
+        const rows = document.querySelectorAll('.package-row');
+        rows.forEach(row => {
+            const rowPkg = row.getAttribute('data-package');
+            if (pkgType === 'all' || rowPkg.includes(pkgType)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
     }
 
     window.onclick = function(event) {

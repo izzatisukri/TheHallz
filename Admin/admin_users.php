@@ -311,7 +311,6 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
             border-bottom: 1px solid var(--border-color);
         }
 
-        /* TAMBAHAN: Menyusun susunan tajuk dan sub-menu rapat */
         .section-title-container {
             display: flex;
             flex-direction: column;
@@ -325,7 +324,6 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
             font-family: 'Playfair Display', serif;
         }
 
-        /* TAMBAHAN: Gaya reka bentuk sub-menu Chart & List */
         .sub-nav {
             display: flex;
             gap: 20px;
@@ -351,15 +349,12 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
             border-bottom: 2px solid var(--primary-burgundy);
         }
 
-        /* TAMBAHAN: Container khas untuk meletakkan saiz Pie Chart */
         .chart-container {
             display: none;
-            /* Disembunyikan secara lalai (default) */
             max-width: 400px;
             margin: 20px auto;
         }
 
-        /* Butang Delete Premium */
         .btn-delete {
             background-color: #fff5f5;
             color: #e53e3e;
@@ -411,7 +406,6 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
             white-space: nowrap;
         }
 
-        /* PENGUBAHSUAIAN GAYA UNTUK DROPDOWN STATUS */
         .status-select {
             padding: 6px 12px;
             border-radius: var(--radius-sm);
@@ -430,7 +424,7 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
             border-color: #c6f6d5;
         }
 
-        .status-suspended {
+        .status-inactive {
             color: #dd6b20;
             background-color: #fffaf0;
             border-color: #feebc8;
@@ -610,7 +604,8 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
           
                             foreach ($users_list as $user) {
                                 $currentStatus = ucfirst(strtolower(trim($user['status'])));
-                                $statusClass = ($currentStatus === 'Suspended') ? 'status-suspended' : 'status-active';
+                                // Ubah semakan kepada Inactive
+                                $statusClass = ($currentStatus === 'Inactive') ? 'status-inactive' : 'status-active';
                         ?>
                                 <tr>
                                     <td><?php echo htmlspecialchars($user['name']); ?></td>
@@ -624,7 +619,8 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
                                                 onchange="updateStatusStyle(this)">
                   
                                             <option value="Active" style="color: #2f855a;" <?php echo ($currentStatus === 'Active' || $currentStatus === '') ? 'selected' : ''; ?>>Active</option>
-                                            <option value="Suspended" style="color: #dd6b20;" <?php echo ($currentStatus === 'Suspended') ? 'selected' : ''; ?>>Suspended</option>
+                                            <!-- Tukar option value kepada Inactive -->
+                                            <option value="Inactive" style="color: #dd6b20;" <?php echo ($currentStatus === 'Inactive') ? 'selected' : ''; ?>>Inactive</option>
                                         </select>
                                     </td>
                
@@ -680,9 +676,9 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
 
             if (newStatus === "Active") {
                 selectElement.classList.add('status-active');
-                selectElement.classList.remove('status-suspended');
-            } else if (newStatus === "Suspended") {
-                selectElement.classList.add('status-suspended');
+                selectElement.classList.remove('status-inactive'); // Tukar kepada status-inactive
+            } else if (newStatus === "Inactive") { // Tukar kepada Inactive
+                selectElement.classList.add('status-inactive'); // Tukar kepada status-inactive
                 selectElement.classList.remove('status-active');
             }
 
@@ -840,5 +836,4 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
     </script>
 
 </body>
-
 </html>

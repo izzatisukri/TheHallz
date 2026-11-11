@@ -17,8 +17,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             if (password_verify($password, $row['client_password'])) {
                 
                 $status = isset($row['client_status']) ? $row['client_status'] : (isset($row['status']) ? $row['status'] : 'Active');
-                if (strtolower(trim($status)) === 'suspended') {
-                    $error_message = "Your account has been suspended!";
+                if (strtolower(trim($status)) === 'inactive') {
+                    $error_message = "Your account is inactive! Please contact admin.";
                 } else {
                     $_SESSION['client_id'] = $row['client_id'];
                     $_SESSION['role'] = 'client';
@@ -44,8 +44,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             if (password_verify($password, $row['owner_password'])) {
                 
                 $status = isset($row['owner_status']) ? $row['owner_status'] : (isset($row['status']) ? $row['status'] : 'Active');
-                if (strtolower(trim($status)) === 'suspended') {
-                    $error_message = "Your account has been suspended! Please contact admin.";
+                if (strtolower(trim($status)) === 'inactive') {
+                    $error_message = "Your account is inactive! Please contact admin.";
                 } else {
                     $_SESSION['owner_id'] = $row['owner_id'];
                     $_SESSION['role'] = 'venue_owner';

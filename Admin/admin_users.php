@@ -145,7 +145,7 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
         }
 
         .header::after {
-            content: '🌸🍃';
+            content: '💍✨';
             position: absolute;
             right: 20px;
             top: 50%;
@@ -166,7 +166,7 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
         }
 
         .logo-area::before {
-            content: '🌸';
+            content: '💍';
             width: 38px;
             height: 38px;
             background: var(--accent-pink);
@@ -349,6 +349,37 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
             border-bottom: 2px solid var(--primary-burgundy);
         }
 
+        /* Filter buttons styling (non-dropdown) */
+        .filter-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .filter-btn {
+            background-color: var(--bg-page);
+            color: var(--text-muted);
+            border: 1.5px solid var(--border-color);
+            padding: 7px 18px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13.5px;
+            transition: all 0.2s ease;
+        }
+
+        .filter-btn:hover {
+            color: var(--primary-burgundy);
+            border-color: var(--primary-burgundy);
+        }
+
+        .filter-btn.active-filter {
+            background-color: var(--primary-burgundy);
+            color: var(--white);
+            border-color: var(--primary-burgundy);
+            box-shadow: 0 4px 12px rgba(122, 34, 79, 0.2);
+        }
+
         .chart-container {
             display: none;
             max-width: 400px;
@@ -480,7 +511,7 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
         .btn-cancel {
             background-color: var(--white);
             color: var(--text-muted);
-            border: 1px solid var(--border-color);
+            border: 1.5px solid var(--border-color);
             padding: 11px 24px;
             font-size: 14px;
             font-weight: 600;
@@ -585,6 +616,13 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
             </div>
 
             <div id="view-list" style="display: block;">
+                <!-- Filter Buttons (All, Client, Owner) -->
+                <div class="filter-buttons">
+                    <button type="button" class="filter-btn active-filter" onclick="filterTable('all', this)">All</button>
+                    <button type="button" class="filter-btn" onclick="filterTable('client', this)">Client</button>
+                    <button type="button" class="filter-btn" onclick="filterTable('owner', this)">Owner</button>
+                </div>
+
                 <table id="table-users">
          
                     <thead>
@@ -604,7 +642,6 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
           
                             foreach ($users_list as $user) {
                                 $currentStatus = ucfirst(strtolower(trim($user['status'])));
-                                // Ubah semakan kepada Inactive
                                 $statusClass = ($currentStatus === 'Inactive') ? 'status-inactive' : 'status-active';
                         ?>
                                 <tr>
@@ -619,7 +656,6 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
                                                 onchange="updateStatusStyle(this)">
                   
                                             <option value="Active" style="color: #2f855a;" <?php echo ($currentStatus === 'Active' || $currentStatus === '') ? 'selected' : ''; ?>>Active</option>
-                                            <!-- Tukar option value kepada Inactive -->
                                             <option value="Inactive" style="color: #dd6b20;" <?php echo ($currentStatus === 'Inactive') ? 'selected' : ''; ?>>Inactive</option>
                                         </select>
                                     </td>
@@ -669,6 +705,27 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
         let rowToDelete = null;
         let userPieChart = null;
 
+        // JavaScript function for table filtering (All, Client, Owner)
+        function filterTable(roleType, btnElement) {
+            const filterButtons = document.querySelectorAll('.filter-btn');
+            filterButtons.forEach(btn => btn.classList.remove('active-filter'));
+            btnElement.classList.add('active-filter');
+
+            const rows = document.querySelectorAll('#table-users tbody tr');
+            rows.forEach(row => {
+                if (row.cells.length >= 4) {
+                    const role = row.cells[3].textContent.trim().toLowerCase();
+                    if (roleType === 'all') {
+                        row.style.display = '';
+                    } else if (role === roleType) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                }
+            });
+        }
+
         function updateStatusStyle(selectElement) {
             const userEmail = selectElement.getAttribute('data-email');
             const userRole = selectElement.getAttribute('data-role');
@@ -676,9 +733,9 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
 
             if (newStatus === "Active") {
                 selectElement.classList.add('status-active');
-                selectElement.classList.remove('status-inactive'); // Tukar kepada status-inactive
-            } else if (newStatus === "Inactive") { // Tukar kepada Inactive
-                selectElement.classList.add('status-inactive'); // Tukar kepada status-inactive
+                selectElement.classList.remove('status-inactive');
+            } else if (newStatus === "Inactive") {
+                selectElement.classList.add('status-inactive');
                 selectElement.classList.remove('status-active');
             }
 

@@ -1032,6 +1032,7 @@ if ($all_ratings_res) {
             <div class="nav-links">
                 <a id="nav-home" class="active" onclick="switchTab('home')"><i class="fa-solid fa-house"></i> Home</a>
                 <a id="nav-bookings" onclick="openMyBookingsModal()"><i class="fa-regular fa-calendar-check"></i> My Bookings</a>
+                <a id="nav-payment" onclick="openMyPaymentModal()"><i class="fa-solid fa-credit-card"></i> My Payment</a>
                 <a class="logout" onclick="openLogoutModal()"><i class="fa-solid fa-arrow-right-from-bracket"></i> Log out</a>
             </div>
         </div>
@@ -1219,6 +1220,19 @@ if ($all_ratings_res) {
         </div>
     </div>
 
+    <!-- MODAL: MY PAYMENT -->
+    <div id="modal-my-payment" class="modal-overlay">
+        <div class="modal-box-booking modal-fade-in" style="max-width: 460px; background-color: var(--white); border-radius: var(--radius-lg); padding: 32px; box-shadow: 0 20px 30px rgba(0, 0, 0, 0.15);">
+            <h3 id="modal-payment-title" style="text-align: center; font-size: 22px; font-family: 'Playfair Display', serif; margin-bottom: 20px; color: var(--primary-burgundy);">My Payment</h3>
+
+            <div class="my-booking-details-box">
+                <div id="dynamic-payment-details"></div>
+            </div>
+
+            <button type="button" class="btn-close-purple" onclick="closeModal('modal-my-payment')">Close</button>
+        </div>
+    </div>
+
     <!-- MODAL: LOGOUT CONFIRMATION -->
     <div id="modal-logout-confirm" class="modal-overlay">
         <div class="logout-box-container">
@@ -1276,12 +1290,18 @@ if ($all_ratings_res) {
         function switchTab(tabType) {
             const homeNav = document.getElementById('nav-home');
             const bookingsNav = document.getElementById('nav-bookings');
+            const paymentNav = document.getElementById('nav-payment');
+
+            homeNav.classList.remove('active');
+            bookingsNav.classList.remove('active');
+            if (paymentNav) paymentNav.classList.remove('active');
+
             if (tabType === 'home') {
                 homeNav.classList.add('active');
-                bookingsNav.classList.remove('active');
             } else if (tabType === 'bookings') {
                 bookingsNav.classList.add('active');
-                homeNav.classList.remove('active');
+            } else if (tabType === 'payment' && paymentNav) {
+                paymentNav.classList.add('active');
             }
         }
 
@@ -1381,7 +1401,7 @@ if ($all_ratings_res) {
 
         function closeModal(modalId) {
             document.getElementById(modalId).style.display = 'none';
-            if (modalId === 'modal-my-bookings') {
+            if (modalId === 'modal-my-bookings' || modalId === 'modal-my-payment') {
                 switchTab('home');
             }
         }
@@ -1479,6 +1499,11 @@ if ($all_ratings_res) {
             }
 
             document.getElementById('modal-my-bookings').style.display = 'flex';
+        }
+
+        function openMyPaymentModal() {
+            switchTab('payment');
+            document.getElementById('modal-my-payment').style.display = 'flex';
         }
 
         function setRating(val) {
@@ -1584,7 +1609,7 @@ if ($all_ratings_res) {
         window.onclick = function(event) {
             if (event.target.classList.contains('modal-overlay')) {
                 event.target.style.display = 'none';
-                if (event.target.id === 'modal-my-bookings') {
+                if (event.target.id === 'modal-my-bookings' || event.target.id === 'modal-my-payment') {
                     switchTab('home');
                 }
             }

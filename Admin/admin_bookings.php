@@ -247,6 +247,30 @@
         font-family: 'Playfair Display', serif;
     }
 
+    /* Filter container sebaris dengan tajuk */
+    .filter-container {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .filter-dropdown {
+        padding: 6px 12px;
+        border-radius: var(--radius-sm);
+        font-weight: 600;
+        font-size: 13px;
+        border: 1.5px solid #e2e8f0;
+        background-color: var(--white);
+        color: var(--text-dark);
+        cursor: pointer;
+        outline: none;
+        transition: all 0.2s ease;
+    }
+
+    .filter-dropdown:focus {
+        border-color: var(--primary-burgundy);
+    }
+
     .btn-delete {
         background-color: #fff5f5;
         color: #e53e3e;
@@ -427,9 +451,39 @@
     </div>
 
     <div class="content-section" style="display: block;">
+        <!-- Bahagian Header & Dropdown Sebaris -->
         <div class="section-header">
             <h3>Booking Requests</h3>
+            
+            <div class="filter-container">
+                <select id="filter-month" class="filter-dropdown" onchange="filterBookings()">
+                    <option value="all">All Months</option>
+                    <option value="01">January</option>
+                    <option value="02">February</option>
+                    <option value="03">March</option>
+                    <option value="04">April</option>
+                    <option value="05">May</option>
+                    <option value="06">June</option>
+                    <option value="07">July</option>
+                    <option value="08">August</option>
+                    <option value="09">September</option>
+                    <option value="10">October</option>
+                    <option value="11">November</option>
+                    <option value="12">December</option>
+                </select>
+
+                <select id="filter-year" class="filter-dropdown" onchange="filterBookings()">
+                    <option value="all">All Years</option>
+                    <option value="2025">2025</option>
+                    <option value="2026">2026</option>
+                    <option value="2027">2027</option>
+                    <option value="2028">2028</option>
+                    <option value="2029">2029</option>
+                    <option value="2030">2030</option>
+                </select>
+            </div>
         </div>
+
         <table id="table-bookings">
             <thead>
                 <tr>
@@ -496,6 +550,50 @@
 </div>
 
 <script>
+    // Fungsi untuk tapisan bulan dan tahun berdasarkan tarikh event
+    function filterBookings() {
+        const selectedMonth = document.getElementById('filter-month').value;
+        const selectedYear = document.getElementById('filter-year').value;
+        const rows = document.querySelectorAll('#table-bookings tbody tr');
+
+        rows.forEach(row => {
+            if (row.cells.length < 6) return;
+
+            const eventDateText = row.cells[2].textContent.trim();
+            let rowYear = '';
+            let rowMonth = '';
+
+            if (eventDateText.includes('-')) {
+                const parts = eventDateText.split('-');
+                if (parts[0].length === 4) {
+                    rowYear = parts[0];
+                    rowMonth = parts[1];
+                } else {
+                    rowYear = parts[2];
+                    rowMonth = parts[1];
+                }
+            } else if (eventDateText.includes('/')) {
+                const parts = eventDateText.split('/');
+                if (parts[0].length === 4) {
+                    rowYear = parts[0];
+                    rowMonth = parts[1];
+                } else {
+                    rowYear = parts[2];
+                    rowMonth = parts[1];
+                }
+            }
+
+            const matchMonth = (selectedMonth === 'all' || rowMonth === selectedMonth);
+            const matchYear = (selectedYear === 'all' || rowYear === selectedYear);
+
+            if (matchMonth && matchYear) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
     function openModal(modalId, buttonElement) {
         document.getElementById(modalId).style.display = 'flex';
         

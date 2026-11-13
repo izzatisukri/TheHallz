@@ -67,7 +67,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     $p_name = mysqli_real_escape_string($conn, $_POST['p_name']);
     $p_price = floatval($_POST['p_price']);
     
-    // Jika No Package dipilih, auto-set inclusion khusus untuk harga sewa dewan
     if ($p_name === 'No Package') {
         $p_inclusions = "This venue does not provide any package. The stated price is strictly for hall rental only. Clients may customize or arrange their own event arrangements.";
     } else {
@@ -531,11 +530,11 @@ if (isset($_SESSION['toast_message'])) {
             box-shadow: 0 0 0 3.5px rgba(122, 34, 79, 0.12);
         }
 
-    #filter-month, #filter-year {
-    color: #2d3748; /* Warna kelabu untuk teks 'All Months' / 'All Years' */
+    #filter-month, #filter-year, #filter-payment-month, #filter-payment-year {
+    color: #2d3748; 
     }
 
-    #filter-month option, #filter-year option {
+    #filter-month option, #filter-year option, #filter-payment-month option, #filter-payment-year option {
     color: #2d3748; 
     }
 
@@ -750,7 +749,6 @@ if (isset($_SESSION['toast_message'])) {
             background-color: #c53030;
         }
 
-        /* TOAST NOTIFICATION (DIALIH KE BAWAH) */
         .toast-notification {
             position: fixed;
             bottom: 30px;
@@ -856,6 +854,7 @@ if (isset($_SESSION['toast_message'])) {
                 <a onclick="switchTab('venues')" id="tab-venues" class="active"><i class="fa-solid fa-building"></i> Venues</a>
                 <a onclick="switchTab('packages')" id="tab-packages"><i class="fa-solid fa-box-archive"></i> Packages</a>
                 <a onclick="switchTab('bookings')" id="tab-bookings"><i class="fa-regular fa-calendar-check"></i> Bookings</a>
+                <a onclick="switchTab('payment')" id="tab-payment"><i class="fa-solid fa-credit-card"></i> Payment</a>
                 <a class="logout" onclick="openModal('modal-logout-confirmation')"><i class="fa-solid fa-arrow-right-from-bracket"></i> Log out</a>
             </div>
         </div>
@@ -1068,6 +1067,110 @@ if (isset($_SESSION['toast_message'])) {
                 </tbody>
             </table>
         </div>
+
+        <div id="section-payment" class="content-section">
+            <div class="section-header">
+                <h3>Payment Records</h3>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <select id="filter-payment-month" class="select-status" onchange="filterPayments()">
+                        <option value="">All Months</option>
+                        <option value="01">January</option>
+                        <option value="02">February</option>
+                        <option value="03">March</option>
+                        <option value="04">April</option>
+                        <option value="05">May</option>
+                        <option value="06">June</option>
+                        <option value="07">July</option>
+                        <option value="08">August</option>
+                        <option value="09">September</option>
+                        <option value="10">October</option>
+                        <option value="11">November</option>
+                        <option value="12">December</option>
+                    </select>
+                    <select id="filter-payment-year" class="select-status" onchange="filterPayments()">
+                        <option value="">All Years</option>
+                        <option value="2025">2025</option>
+                        <option value="2026">2026</option>
+                        <option value="2027">2027</option>
+                        <option value="2028">2028</option>
+                        <option value="2029">2029</option>
+                        <option value="2030">2030</option>
+                    </select>
+                </div>
+            </div>
+            <table id="table-payment">
+                <thead>
+                    <tr>
+                        <th>Full Name</th>
+                        <th>Phone Number</th>
+                        <th>Email Address</th>
+                        <th>Venue Name</th>
+                        <th>Event Date</th>
+                        <th>Package</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php
+                    $booking_query = "SELECT b.*, c.client_name, c.client_phonenum, c.client_email, v.venue_name, p.package_name 
+                                      FROM booking b 
+                                      JOIN client c ON b.client_id = c.client_id 
+                                      JOIN venue v ON b.venue_id = v.venue_id 
+                                      JOIN package p ON b.package_id = p.package_id 
+                                      WHERE v.owner_id = $owner_id";
+                    $booking_result = mysqli_query($conn, $booking_query);
+                    if (mysqli_num_rows($booking_result) > 0) {
+                        mysqli_data_seek($booking_result, 0);
+                        while ($b_row = mysqli_fetch_assoc($booking_result)) {
+                            $b_id = $b_row['booking_id'];
+                            $b_status = $b_row['bookingstatus'];
+
+                            // Semak data pembayaran dari jadual 'payment' berdasarkan booking_id
+                            $pay_check = mysqli_query($conn, "SELECT payment_status FROM payment WHERE booking_id = $b_id LIMIT 1");
+                            $is_paid_from_db = false;
+                            if ($pay_check && mysqli_num_rows($pay_check) > 0) {
+                                $pay_row = mysqli_fetch_assoc($pay_check);
+                                if (strcasecmp($pay_row['payment_status'], 'Paid') == 0) {
+                                    $is_paid_from_db = true;
+                                }
+                            }
+
+                            // Logik status pembayaran mengikut permintaan
+                            if (strcasecmp($b_status, 'Pending') == 0) {
+                                $payment_status = 'Pending';
+                            } elseif (strcasecmp($b_status, 'Confirmed') == 0) {
+                                $payment_status = $is_paid_from_db ? 'Paid' : 'Unpaid';
+                            } elseif (strcasecmp($b_status, 'Completed') == 0) {
+                                $payment_status = 'Completed';
+                            } elseif (strcasecmp($b_status, 'Cancelled') == 0) {
+                                $payment_status = 'Cancelled';
+                            } else {
+                                $payment_status = 'Pending';
+                            }
+
+                            $p_color = '#dd6b20';
+                            if ($payment_status === 'Paid') { $p_color = '#2f855a'; }
+                            elseif ($payment_status === 'Unpaid') { $p_color = '#e53e3e'; }
+                            elseif ($payment_status === 'Completed') { $p_color = '#3182ce'; }
+                            elseif ($payment_status === 'Cancelled') { $p_color = '#e53e3e'; }
+
+                            echo "<tr>";
+                            echo "<td>" . htmlspecialchars($b_row['client_name']) . "</td>";
+                            echo "<td>" . htmlspecialchars($b_row['client_phonenum']) . "</td>";
+                            echo "<td>" . htmlspecialchars($b_row['client_email']) . "</td>";
+                            echo "<td>" . htmlspecialchars($b_row['venue_name']) . "</td>";
+                            echo "<td>" . htmlspecialchars($b_row['event_date']) . "</td>";
+                            echo "<td>" . htmlspecialchars($b_row['package_name']) . "</td>";
+                            echo "<td style='font-weight: 700; color: " . $p_color . ";'>" . $payment_status . "</td>";
+                            echo "</tr>";
+                        }
+                    } else {
+                        echo "<tr><td colspan='7' style='text-align:center;'>No payment records found.</td></tr>";
+                    }
+                    ?>
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <div class="toast-notification" id="toast-global"></div>
@@ -1160,7 +1263,6 @@ if (isset($_SESSION['toast_message'])) {
         </div>
     </div>
 
-    <!-- MODAL ADD PACKAGE -->
     <div id="modal-add-package" class="modal-overlay">
         <div class="modal-box-add">
             <h3>Add New Package</h3>
@@ -1206,7 +1308,6 @@ if (isset($_SESSION['toast_message'])) {
         </div>
     </div>
 
-    <!-- MODAL EDIT PACKAGE -->
     <div id="modal-edit-package" class="modal-overlay">
         <div class="modal-box-add">
             <h3>Edit Package</h3>
@@ -1279,7 +1380,6 @@ if (isset($_SESSION['toast_message'])) {
             <?php endif; ?>
         };
 
-        // Fungsi Auto-Update Inclusions untuk "No Package" (Harga dibenarkan isi untuk sewa dewan)
         function handlePackageSelection(mode) {
             const noPackageInclusionText = "This venue does not provide any package. The stated price is strictly for hall rental only. Clients may customize or arrange their own event arrangements.";
             
@@ -1489,7 +1589,35 @@ if (isset($_SESSION['toast_message'])) {
             for (let i = 0; i < rows.length; i++) {
                 const row = rows[i];
                 if (row.cells.length < 5) continue;
-                const eventDateCell = row.cells[4].textContent.trim(); // Event Date column
+                const eventDateCell = row.cells[4].textContent.trim();
+                if (eventDateCell) {
+                    const parts = eventDateCell.split('-');
+                    const year = parts[0];
+                    const month = parts[1];
+
+                    let matchMonth = !selectedMonth || month === selectedMonth;
+                    let matchYear = !selectedYear || year === selectedYear;
+
+                    if (matchMonth && matchYear) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                }
+            }
+        }
+
+        function filterPayments() {
+            const selectedMonth = document.getElementById('filter-payment-month').value;
+            const selectedYear = document.getElementById('filter-payment-year').value;
+            const table = document.getElementById('table-payment');
+            const tbody = table.getElementsByTagName('tbody')[0];
+            const rows = tbody.getElementsByTagName('tr');
+
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                if (row.cells.length < 5) continue;
+                const eventDateCell = row.cells[4].textContent.trim();
                 if (eventDateCell) {
                     const parts = eventDateCell.split('-');
                     const year = parts[0];

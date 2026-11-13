@@ -24,6 +24,30 @@ if ($client_result && mysqli_num_rows($client_result) > 0) {
 
 $booking_submitted = false;
 $msg_toast = "";
+
+// PROSES CONFIRM PAYMENT (Simpan ke dalam jadual payment)
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type']) && $_POST['action_type'] == 'confirm_payment') {
+    $pay_booking_id = intval($_POST['pay_booking_id']);
+    $deposit_amount = floatval($_POST['deposit_amount']);
+    $payment_date = date('Y-m-d H:i:s');
+    $payment_status = "Paid";
+    $payment_receipt = "REC-" . $pay_booking_id . "-" . rand(1000, 9999);
+
+    // Masukkan data bayaran ke dalam jadual payment
+    $insert_payment_query = "INSERT INTO payment (booking_id, client_id, payment_amount, payment_date, payment_status, payment_receipt) 
+                             VALUES ('$pay_booking_id', '$client_id', '$deposit_amount', '$payment_date', '$payment_status', '$payment_receipt')";
+    
+    if (mysqli_query($conn, $insert_payment_query)) {
+        $_SESSION['toast_message'] = "Payment confirmed successfully! Status updated to Paid.";
+    } else {
+        $_SESSION['toast_message'] = "Error recording payment: " . mysqli_error($conn);
+    }
+    
+    // Redirect menggunakan PRG pattern untuk elakkan isu resubmit semasa refresh
+    header("Location: " . $_SERVER['PHP_SELF']);
+    exit();
+}
+
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type']) && $_POST['action_type'] == 'submit_booking') {
     $venue_id = mysqli_real_escape_string($conn, $_POST['book_venue_id']);
     $pkg_query = "SELECT package_id FROM package WHERE venue_id = '$venue_id' LIMIT 1";
@@ -57,13 +81,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type']) && $_PO
             $insert_query = "INSERT INTO booking (client_id, venue_id, package_id, booking_date, event_date, num_of_guests, bookingstatus) 
                              VALUES ('$client_id', '$venue_id', $package_id, '$booking_date', '$event_date', '$num_of_guests', '$bookingstatus')";
             if (mysqli_query($conn, $insert_query)) {
-                $booking_submitted = true;
-                $msg_toast = "Booking submitted! Waiting for owner approval.";
+                $_SESSION['toast_message'] = "Booking submitted! Waiting for owner approval.";
             } else {
-                $msg_toast = "Error: " . mysqli_error($conn);
+                $_SESSION['toast_message'] = "Error: " . mysqli_error($conn);
             }
+            header("Location: " . $_SERVER['PHP_SELF']);
+            exit();
         }
     }
+}
+
+// Tangkap mesej toast daripada session (untuk PRG pattern)
+if (isset($_SESSION['toast_message'])) {
+    $msg_toast = $_SESSION['toast_message'];
+    unset($_SESSION['toast_message']);
 }
 
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type']) && $_POST['action_type'] == 'submit_rating') {
@@ -104,6 +135,16 @@ $pkg_result = mysqli_query($conn, $pkg_sql);
 if ($pkg_result) {
     while ($row = mysqli_fetch_assoc($pkg_result)) {
         $packages_details[$row['package_id']] = $row;
+    }
+}
+
+// Semak status pembayaran dari jadual payment
+$my_payments_status = [];
+$pay_check_q = "SELECT booking_id, payment_status FROM payment WHERE client_id = '$client_id'";
+$pay_check_res = mysqli_query($conn, $pay_check_q);
+if ($pay_check_res) {
+    while ($p_row = mysqli_fetch_assoc($pay_check_res)) {
+        $my_payments_status[$p_row['booking_id']] = $p_row['payment_status'];
     }
 }
 
@@ -620,6 +661,26 @@ if ($all_ratings_res) {
             box-shadow: 0 6px 15px rgba(122, 34, 79, 0.3);
         }
 
+        .btn-secondary {
+            background: var(--white);
+            color: var(--primary-burgundy);
+            border: 1px solid var(--primary-burgundy);
+            padding: 9px 20px;
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-secondary:hover {
+            background: var(--accent-pink);
+        }
+
         .btn-cancel {
             background-color: var(--white);
             color: var(--text-muted);
@@ -869,7 +930,7 @@ if ($all_ratings_res) {
             cursor: pointer;
         }
 
-        /* TOAST NOTIFICATION (DIALIH KE BAWAH) */
+        /* TOAST NOTIFICATION */
         .toast-notification {
             position: fixed;
             bottom: 30px;
@@ -1017,6 +1078,42 @@ if ($all_ratings_res) {
             text-align: left;
             color: var(--text-muted);
         }
+
+        /* RECEIPT CARD DESIGN */
+        .receipt-card {
+            background: #fff;
+            border: 2px dashed var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            margin-top: 15px;
+            font-size: 13.5px;
+            color: var(--text-dark);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+        }
+        .receipt-header {
+            text-align: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 12px;
+            margin-bottom: 15px;
+        }
+        .receipt-header h4 {
+            font-family: 'Playfair Display', serif;
+            font-size: 20px;
+            color: var(--primary-burgundy);
+        }
+        .receipt-header p {
+            font-size: 11.5px;
+            color: var(--text-muted);
+        }
+        .receipt-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        .receipt-divider {
+            border-top: 1px dashed var(--border-color);
+            margin: 12px 0;
+        }
     </style>
 </head>
 
@@ -1069,7 +1166,7 @@ if ($all_ratings_res) {
                         </button>
                     </form>
 
-                    <!-- PACKAGE FILTER INTERFACE (BAWAH SEARCH & UPDATE MAP) -->
+                    <!-- PACKAGE FILTER INTERFACE -->
                     <div style="margin-top: 22px; border-top: 1px solid var(--border-color); padding-top: 18px;">
                         <label style="display: block; font-size: 13px; font-weight: 700; margin-bottom: 10px; color: var(--primary-burgundy);">Filter by Package</label>
                         <div id="package-filter-pills" style="display: flex; flex-wrap: wrap; gap: 8px;">
@@ -1235,6 +1332,15 @@ if ($all_ratings_res) {
         </div>
     </div>
 
+    <!-- MODAL: VIEW RECEIPT -->
+    <div id="modal-view-receipt" class="modal-overlay">
+        <div class="modal-box-booking modal-fade-in" style="max-width: 450px; background-color: var(--white); border-radius: var(--radius-lg); padding: 32px; box-shadow: 0 20px 30px rgba(0, 0, 0, 0.15);">
+            <h3 style="text-align: center; font-size: 22px; font-family: 'Playfair Display', serif; margin-bottom: 15px; color: var(--primary-burgundy);">Payment Receipt</h3>
+            <div id="receipt-modal-content"></div>
+            <button type="button" class="btn-close-purple" onclick="closeModal('modal-view-receipt')">Close Receipt</button>
+        </div>
+    </div>
+
     <!-- MODAL: LOGOUT CONFIRMATION -->
     <div id="modal-logout-confirm" class="modal-overlay">
         <div class="logout-box-container">
@@ -1268,8 +1374,10 @@ if ($all_ratings_res) {
                 <?php foreach ($my_bookings as $b_row): ?>
                     <?php 
                         $price_val = !empty($b_row['package_price']) ? $b_row['package_price'] : ($b_row['venue_price'] ?? 0);
+                        $b_id = $b_row['booking_id'];
+                        $is_paid_status = isset($my_payments_status[$b_id]) && $my_payments_status[$b_id] == 'Paid' ? 1 : 0;
                     ?>
-                    <tr data-venueid="<?php echo $b_row['venue_id']; ?>" data-price="<?php echo $price_val; ?>">
+                    <tr data-venueid="<?php echo $b_row['venue_id']; ?>" data-price="<?php echo $price_val; ?>" data-bookingid="<?php echo $b_id; ?>" data-ispaid="<?php echo $is_paid_status; ?>">
                         <td><?php echo htmlspecialchars($b_row['venue_name']); ?></td>
                         <td><?php echo htmlspecialchars($b_row['package_name'] ?? 'N/A'); ?></td>
                         <td><?php echo htmlspecialchars($b_row['event_date']); ?></td>
@@ -1288,6 +1396,7 @@ if ($all_ratings_res) {
         const venueRatingsStorage = <?php echo json_encode($db_venue_ratings); ?>;
         const venueRatingBreakdown = <?php echo json_encode($db_venue_rating_breakdown); ?>;
         const hasRatedVenue = <?php echo json_encode($db_has_rated_venue); ?>;
+        const clientName = <?php echo json_encode($client_name); ?>;
 
         let currentPackageFilter = 'all';
         let currentAreaFilter = '';
@@ -1538,17 +1647,32 @@ if ($all_ratings_res) {
                     const packageName = cells[1].textContent;
                     const eventDate = cells[2].textContent;
                     const statusText = cells[4].textContent.trim();
+                    const bookingId = row.getAttribute('data-bookingid') || (index + 1);
+                    const isPaid = parseInt(row.getAttribute('data-ispaid')) === 1;
                     const st = statusText.toLowerCase();
 
                     const basePrice = parseFloat(row.getAttribute('data-price')) || 0;
-                    const depositAmount = basePrice > 0 ? basePrice : 400.00;
-                    const availableBalance = 300.00; // Contoh baki akaun demo ditetapkan sebanyak RM300
+                    const depositAmount = basePrice > 0 ? basePrice * 0.20 : 200.00;
+                    const remainingBalance = basePrice > 0 ? basePrice * 0.80 : 800.00;
 
                     const borderStyle = index > 0 ? 'border-top: 2px solid var(--border-color); margin-top: 20px; padding-top: 20px;' : '';
 
                     let paymentBody = '';
 
-                    if (st === 'pending') {
+                    if (st === 'completed') {
+                        paymentBody = `
+                            <div style="background-color: #f7fafc; border: 1px solid #e2e8f0; border-radius: var(--radius-sm); padding: 15px; margin-top: 10px; text-align: center;">
+                                <i class="fa-solid fa-circle-check" style="color: #3182ce; font-size: 22px; margin-bottom: 8px;"></i>
+                                <h5 style="color: #2d3748; font-size: 14px; margin-bottom: 4px; font-weight: 700;">Payment Completed</h5>
+                                <p style="color: var(--text-muted); font-size: 12.5px; line-height: 1.4; margin-bottom: 12px;">
+                                    Payment is no longer required as this booking has been completed.
+                                </p>
+                                <button type="button" class="btn-secondary" style="width: 100%;" onclick="openReceiptModal('${bookingId}', '${venueName}', '${packageName}', '${eventDate}', ${depositAmount}, ${remainingBalance}, 'Completed')">
+                                    <i class="fa-solid fa-receipt"></i> View Receipt
+                                </button>
+                            </div>
+                        `;
+                    } else if (st === 'pending') {
                         paymentBody = `
                             <div style="background-color: #fffaf0; border: 1px solid #feebc8; border-radius: var(--radius-sm); padding: 15px; margin-top: 10px; text-align: center;">
                                 <i class="fa-solid fa-hourglass-half" style="color: #dd6b20; font-size: 24px; margin-bottom: 8px;"></i>
@@ -1558,75 +1682,64 @@ if ($all_ratings_res) {
                                 </p>
                             </div>
                         `;
-                    } else if (st === 'confirmed' || st === 'completed') {
-                        const isInsufficient = availableBalance < depositAmount;
+                    } else if (st === 'confirmed') {
+                        if (isPaid) {
+                            paymentBody = `
+                                <div style="background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 16px; margin-top: 10px;">
+                                    <div style="text-align: center; color: #38a169; font-weight: 700; font-size: 13px; margin-top: 4px; background: #f0fff4; padding: 10px; border: 1px solid #c6f6d5; border-radius: 6px; margin-bottom: 10px;">
+                                        <i class="fa-solid fa-circle-check"></i> Paid
+                                    </div>
+                                    <button type="button" class="btn-secondary" style="width: 100%;" onclick="openReceiptModal('${bookingId}', '${venueName}', '${packageName}', '${eventDate}', ${depositAmount}, ${remainingBalance}, 'Paid')">
+                                        <i class="fa-solid fa-receipt"></i> View Receipt
+                                    </button>
+                                </div>
+                            `;
+                        } else {
+                            paymentBody = `
+                                <div style="background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 16px; margin-top: 10px;" id="payment-card-${index}">
+                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+                                        <i class="fa-solid fa-building-columns" style="color: var(--primary-burgundy); font-size: 16px;"></i>
+                                        <div>
+                                            <div style="font-size: 14px; font-weight: 700; color: var(--text-dark);">Online Banking Payment</div>
+                                            <div style="font-size: 11.5px; color: var(--text-muted);">Wedding Hall Management System</div>
+                                        </div>
+                                    </div>
 
-                        paymentBody = `
-                            <div style="background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 16px; margin-top: 10px;">
-                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
-                                    <i class="fa-solid fa-building-columns" style="color: var(--primary-burgundy); font-size: 16px;"></i>
-                                    <div>
-                                        <div style="font-size: 14px; font-weight: 700; color: var(--text-dark);">Online Banking Payment</div>
-                                        <div style="font-size: 11.5px; color: var(--text-muted);">Wedding Hall Management System</div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: 700; color: var(--text-dark); margin-bottom: 6px;">
+                                        <span>Deposit (20%)</span>
+                                        <span style="font-size: 16px; color: var(--primary-burgundy);">RM ${depositAmount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                                    </div>
+                                    <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
+                                        Remaining balance: RM ${remainingBalance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                                    </div>
+
+                                    <div style="background-color: #fdf2f8; border: 1px solid #f8bbd0; border-radius: 6px; padding: 10px 12px; margin-bottom: 14px; font-size: 12.5px; color: #7a224f; line-height: 1.4;">
+                                        <i class="fa-solid fa-circle-info" style="margin-right: 4px;"></i> A 20% deposit needs to be paid now, while the remaining balance (80%) should be paid 1 month before the event date.
+                                    </div>
+
+                                    <div style="font-size: 12.5px; color: var(--text-muted); margin-bottom: 6px;">Select your bank</div>
+                                    <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; font-size: 13.5px;">
+                                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;"><input type="radio" name="bank_${index}" checked> Maybank</label>
+                                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;"><input type="radio" name="bank_${index}"> CIMB Bank</label>
+                                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;"><input type="radio" name="bank_${index}"> RHB Bank</label>
+                                    </div>
+
+                                    <div id="payment-action-area-${index}">
+                                        <form method="POST" action="">
+                                            <input type="hidden" name="action_type" value="confirm_payment">
+                                            <input type="hidden" name="pay_booking_id" value="${bookingId}">
+                                            <input type="hidden" name="deposit_amount" value="${depositAmount}">
+                                            <button type="submit" class="btn-primary" style="width: 100%; padding: 10px; font-size: 13px;">
+                                                <i class="fa-solid fa-lock"></i> Confirm Payment
+                                            </button>
+                                        </form>
+                                    </div>
+                                    <div style="font-size: 10.5px; color: var(--text-muted); text-align: center; margin-top: 8px;">
+                                        Interactive example only. This does not connect to a real bank or process payments.
                                     </div>
                                 </div>
-
-                                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: 700; color: var(--text-dark); margin-bottom: 12px;">
-                                    <span>Deposit Amount</span>
-                                    <span style="font-size: 16px; color: var(--primary-burgundy);">RM ${depositAmount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
-                                </div>
-
-                                <div style="font-size: 12.5px; color: var(--text-muted); margin-bottom: 6px;">Select your bank</div>
-                                <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; font-size: 13.5px;">
-                                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;"><input type="radio" name="bank_${index}" checked> Maybank</label>
-                                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;"><input type="radio" name="bank_${index}"> CIMB Bank</label>
-                                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;"><input type="radio" name="bank_${index}"> RHB Bank</label>
-                                </div>
-
-                                <div style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 4px;">Demo account balance (simulation only)</div>
-                                <div style="margin-bottom: 8px;">
-                                    <label style="display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 3px;">Available balance (RM)</label>
-                                    <input type="text" value="${availableBalance.toFixed(0)}" readonly style="width: 100%; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-page); font-size: 13px; color: var(--text-dark);">
-                                </div>
-                                <div style="margin-bottom: 12px;">
-                                    <label style="display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 3px;">Payment amount (RM)</label>
-                                    <input type="text" value="${depositAmount.toFixed(0)}" readonly style="width: 100%; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-page); font-size: 13px; color: var(--text-dark);">
-                                </div>
-
-                                ${st === 'confirmed' ? `
-                                    ${isInsufficient ? `
-                                        <div style="background-color: #fff5f5; border: 1px solid #fed7d7; border-radius: 6px; padding: 10px; display: flex; align-items: flex-start; gap: 8px; margin-bottom: 12px;">
-                                            <i class="fa-solid fa-circle-xmark" style="color: #e53e3e; margin-top: 2px;"></i>
-                                            <div style="font-size: 12px; color: #9b2c2c;">
-                                                <strong>Payment Unsuccessful</strong><br>
-                                                Transaction could not be completed due to insufficient account balance. Please top up your account to proceed.
-                                            </div>
-                                        </div>
-                                        <button type="button" class="btn-primary" style="width: 100%; padding: 10px; font-size: 13px; opacity: 0.6; cursor: not-allowed;" disabled>
-                                            <i class="fa-solid fa-lock"></i> Pay Now (Insufficient Funds)
-                                        </button>
-                                    ` : `
-                                        <div style="background-color: #f0fff4; border: 1px solid #c6f6d5; border-radius: 6px; padding: 10px; display: flex; align-items: flex-start; gap: 8px; margin-bottom: 12px;">
-                                            <i class="fa-solid fa-circle-check" style="color: #38a169; margin-top: 2px;"></i>
-                                            <div style="font-size: 12px; color: #22543d;">
-                                                <strong>Sufficient Balance</strong><br>
-                                                The simulated bank account has enough funds to proceed with payment.
-                                            </div>
-                                        </div>
-                                        <button type="button" class="btn-primary" style="width: 100%; padding: 10px; font-size: 13px;" onclick="simulatePaymentProcess('${venueName}', ${depositAmount})">
-                                            <i class="fa-solid fa-lock"></i> Pay Now (Simulated)
-                                        </button>
-                                    `}
-                                ` : `
-                                    <div style="text-align: center; color: #3182ce; font-weight: 700; font-size: 13px; margin-top: 8px;">
-                                        <i class="fa-solid fa-circle-check"></i> Payment Completed Successfully
-                                    </div>
-                                `}
-                                <div style="font-size: 10.5px; color: var(--text-muted); text-align: center; margin-top: 8px;">
-                                    Interactive example only. This does not connect to a real bank or process payments.
-                                </div>
-                            </div>
-                        `;
+                            `;
+                        }
                     } else {
                         paymentBody = `
                             <div style="background-color: #fff5f5; border: 1px solid #fed7d7; border-radius: var(--radius-sm); padding: 12px; margin-top: 10px; text-align: center; color: #e53e3e; font-size: 13px;">
@@ -1654,8 +1767,57 @@ if ($all_ratings_res) {
             document.getElementById('modal-my-payment').style.display = 'flex';
         }
 
-        function simulatePaymentProcess(venueName, amount) {
-            triggerToast(`Simulating payment of RM ${amount.toLocaleString(undefined, {minimumFractionDigits: 2})} for ${venueName}... Successful!`);
+        function openReceiptModal(bookingId, venueName, packageName, eventDate, depositAmount, remainingBalance, statusStr) {
+            const receiptContent = document.getElementById('receipt-modal-content');
+            const todayDate = new Date().toLocaleDateString('en-GB');
+
+            receiptContent.innerHTML = `
+                <div class="receipt-card">
+                    <div class="receipt-header">
+                        <h4>TheHallz Official Receipt</h4>
+                        <p>Wedding Hall Management System</p>
+                        <p>Receipt No: #REC-${bookingId}-${Math.floor(1000 + Math.random() * 9000)}</p>
+                        <p>Date: ${todayDate}</p>
+                    </div>
+
+                    <div class="receipt-row">
+                        <span>Customer Name:</span>
+                        <strong>${clientName}</strong>
+                    </div>
+                    <div class="receipt-row">
+                        <span>Venue Name:</span>
+                        <strong>${venueName}</strong>
+                    </div>
+                    <div class="receipt-row">
+                        <span>Package:</span>
+                        <strong>${packageName}</strong>
+                    </div>
+                    <div class="receipt-row">
+                        <span>Event Date:</span>
+                        <strong>${eventDate}</strong>
+                    </div>
+
+                    <div class="receipt-divider"></div>
+
+                    <div class="receipt-row">
+                        <span>Deposit Paid (20%):</span>
+                        <strong style="color: var(--primary-burgundy);">RM ${parseFloat(depositAmount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong>
+                    </div>
+                    <div class="receipt-row">
+                        <span>Remaining Balance (80%):</span>
+                        <span>RM ${parseFloat(remainingBalance).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                    </div>
+
+                    <div class="receipt-divider"></div>
+
+                    <div class="receipt-row" style="font-size: 15px;">
+                        <span>Payment Status:</span>
+                        <strong style="color: #38a169;">${statusStr}</strong>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('modal-view-receipt').style.display = 'flex';
         }
 
         function setRating(val) {
@@ -1847,7 +2009,7 @@ if ($all_ratings_res) {
                 dateInput.setAttribute('min', minDate);
             }
 
-            <?php if ($booking_submitted || !empty($msg_toast)): ?>
+            <?php if (!empty($msg_toast)): ?>
                 triggerToast('<?php echo $msg_toast; ?>');
             <?php endif; ?>
         });

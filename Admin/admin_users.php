@@ -166,7 +166,7 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
         }
 
         .logo-area::before {
-            content: '💍';
+            content: '🌸';
             width: 38px;
             height: 38px;
             background: var(--accent-pink);

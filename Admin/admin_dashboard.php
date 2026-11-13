@@ -49,6 +49,42 @@ $pct_4 = ($rating_counts[4] / $max_rating_count) * 100;
 $pct_3 = ($rating_counts[3] / $max_rating_count) * 100;
 $pct_2 = ($rating_counts[2] / $max_rating_count) * 100;
 $pct_1 = ($rating_counts[1] / $max_rating_count) * 100;
+
+// -------------------------------------------------------------------------
+// PAYMENT REPORT QUERIES (Merujuk kepada table 'payment')
+// -------------------------------------------------------------------------
+$payment_count_query = "SELECT 
+    SUM(CASE WHEN payment_status = 'Paid' THEN 1 ELSE 0 END) as successful_payments,
+    SUM(CASE WHEN payment_status = 'Failed' THEN 1 ELSE 0 END) as failed_payments,
+    SUM(CASE WHEN payment_status = 'Pending' THEN 1 ELSE 0 END) as pending_status_count,
+    SUM(CASE WHEN payment_status = 'Paid' THEN payment_amount ELSE 0 END) as total_received_amount,
+    SUM(CASE WHEN payment_status = 'Pending' THEN payment_amount ELSE 0 END) as pending_amount,
+    COUNT(payment_id) as total_transactions
+FROM payment";
+$payment_count_result = mysqli_query($conn, $payment_count_query);
+$payment_counts_data = $payment_count_result ? mysqli_fetch_assoc($payment_count_result) : [
+    'successful_payments' => 0, 
+    'failed_payments' => 0, 
+    'pending_status_count' => 0,
+    'total_received_amount' => 0,
+    'pending_amount' => 0,
+    'total_transactions' => 0
+];
+
+$total_transactions = $payment_counts_data['total_transactions'] ?? 0;
+$successful_payments = $payment_counts_data['successful_payments'] ?? 0;
+$failed_payments = $payment_counts_data['failed_payments'] ?? 0;
+$pending_status_count = $payment_counts_data['pending_status_count'] ?? 0;
+$total_received_amount = $payment_counts_data['total_received_amount'] ?? 0;
+$pending_amount = $payment_counts_data['pending_amount'] ?? 0;
+
+$total_payments_count = $total_transactions > 0 ? $total_transactions : 1;
+
+$pct_paid = ($successful_payments / $total_payments_count) * 100;
+$pct_pending_status = ($pending_status_count / $total_payments_count) * 100;
+$pct_failed = ($failed_payments / $total_payments_count) * 100;
+
+$payment_success_rate = $total_transactions > 0 ? ($successful_payments / $total_transactions) * 100 : 0;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -124,7 +160,7 @@ $pct_1 = ($rating_counts[1] / $max_rating_count) * 100;
     }
 
     .header::after {
-        content: '🌸🍃';
+        content: '✨🌸';
         position: absolute;
         right: 20px;
         top: 50%;
@@ -145,7 +181,7 @@ $pct_1 = ($rating_counts[1] / $max_rating_count) * 100;
     }
 
     .logo-area::before {
-        content: '🌸';
+        content: '💍';
         width: 38px;
         height: 38px;
         background: var(--accent-pink);
@@ -781,6 +817,48 @@ $pct_1 = ($rating_counts[1] / $max_rating_count) * 100;
             <div class="rating-star-label">1 Star</div>
             <div class="rating-bar-bg"><div class="rating-bar-fill" style="width: <?php echo $pct_1; ?>%;"></div></div>
             <div class="rating-count-value"><?php echo $rating_counts[1]; ?></div>
+        </div>
+    </div>
+
+    <!-- Payment Report Section -->
+    <div class="content-section">
+        <div class="section-header">
+            <div>
+                <h3 style="margin-bottom: 5px;">Payment Report</h3>
+                <p style="font-size: 14px; color: var(--text-muted); font-weight: 400;">Overview of customer deposit payments</p>
+            </div>
+        </div>
+
+        <div class="rating-overview">
+            <div class="rating-card-box">
+                <div class="label-text">Total Transactions</div>
+                <div class="main-value"><?php echo $total_transactions; ?></div>
+            </div>
+            <div class="rating-card-box">
+                <div class="label-text">Payment Success Rate</div>
+                <div class="main-value" style="color: #2f855a;"><?php echo number_format($payment_success_rate, 1); ?>%</div>
+            </div>
+        </div>
+
+        <div class="rating-distribution-title">Payment Status Overview</div>
+        <div class="rating-distribution-subtitle">Summary of payment statuses</div>
+
+        <div class="rating-row-item">
+            <div class="rating-star-label">Paid</div>
+            <div class="rating-bar-bg"><div class="rating-bar-fill" style="width: <?php echo $pct_paid; ?>%;"></div></div>
+            <div class="rating-count-value" style="width: 75px; text-align: right;"><?php echo $successful_payments; ?> payments</div>
+        </div>
+
+        <div class="rating-row-item">
+            <div class="rating-star-label">Pending</div>
+            <div class="rating-bar-bg"><div class="rating-bar-fill" style="width: <?php echo $pct_pending_status; ?>%; background: #d69e2e;"></div></div>
+            <div class="rating-count-value" style="width: 75px; text-align: right;"><?php echo $pending_status_count; ?> payments</div>
+        </div>
+
+        <div class="rating-row-item">
+            <div class="rating-star-label">Unpaid</div>
+            <div class="rating-bar-bg"><div class="rating-bar-fill" style="width: <?php echo $pct_failed; ?>%; background: #e53e3e;"></div></div>
+            <div class="rating-count-value" style="width: 75px; text-align: right;"><?php echo $failed_payments; ?> payments</div>
         </div>
     </div>
 </div>

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3309
--- Generation Time: Nov 13, 2026 at 05:13 AM
+-- Generation Time: Nov 13, 2026 at 05:18 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -173,8 +173,6 @@ CREATE TABLE `venue` (
   `venue_price` decimal(10,2) NOT NULL,
   `venue_desc` text NOT NULL,
   `owner_id` int(11) NOT NULL,
-  `venue_ssm` varchar(20) NOT NULL,
-  `venue_ssm_file` varchar(255) NOT NULL,
   `venue_image` text NOT NULL,
   `admin_id` int(11) DEFAULT NULL,
   `venue_status` enum('Pending','Approved','Rejected') NOT NULL DEFAULT 'Pending'
@@ -184,16 +182,16 @@ CREATE TABLE `venue` (
 -- Dumping data for table `venue`
 --
 
-INSERT INTO `venue` (`venue_id`, `venue_name`, `venue_location`, `venue_capacity`, `venue_price`, `venue_desc`, `owner_id`, `venue_ssm`, `venue_ssm_file`, `venue_image`, `admin_id`, `venue_status`) VALUES
-(2, 'Orkid House', 'No 12, Jalan Melaka Raya 5, 75000 Melaka, Malaysia', 1000, 0.00, '', 1, '202301234567', '1782751123_ssmCert.jpg', '1782751123_weddingVenue1.jpg', NULL, 'Approved'),
-(8, 'Dewan Serbaguna Semarak', 'No. 25, Jalan S2 B12, Green Street Homes, Seremban 2', 700, 0.00, '', 6, '202601012345', '1782805945_SSM Aufa.jpg', '1782805945_gambar hall aufa.jpg', NULL, 'Approved'),
-(9, 'Rose Glass Hall', 'Lot PT 7658, DT Jalan Autocity 2, Persiaran Autocity, Jalan Hang Tuah Jaya, 76100 Durian Tunggal', 1000, 0.00, '', 6, '202601012345', '1782840796_SSM Aufa.jpg', '1782840796_Rose Glass Hall.jpg', NULL, 'Approved'),
-(10, 'Daza Villa Wedding Hall', 'Lot 9258, Jalan Kampung Perepat, 42200 Klang, Selangor, Malaysia.', 800, 0.00, '', 9, '202312345678', '1782843664_SSM.jpg', '1782843664_daud wedding hall.jpg', NULL, 'Approved'),
-(11, 'Ivory Pearl Ballroom', 'No. 55, Jalan Cempaka 8, Taman Indah, 70100 Seremban, Negeri Sembilan', 1500, 0.00, '', 8, '202401123456', '1782844239_SSM.jpg', '1782844239_wedding hall ammar.jpg', NULL, 'Pending'),
-(12, 'Emerald Crown Hall', 'No. 9, Jalan Sutera 3, Bandar Impian, 40150 Shah Alam, Selangor', 500, 0.00, '', 9, '202208998877', '1782844569_SSM.jpg', '1782844569_pelamin1.jpg', NULL, 'Pending'),
-(13, 'Crystal Blossom Ballroom', 'No. 88, Persiaran Mutiara 2, Bandar Harmoni, 81100 Johor Bahru, Johor', 1000, 0.00, '', 7, '202205456789', '1782844977_SSM.jpg', '1782844977_wedding abbas.jpg', NULL, 'Pending'),
-(14, 'The Ever After Hall', 'No. 35, Jalan Seri Putra 4, Bandar Seri Putra, 43000 Bangi, Selangor', 700, 0.00, '', 10, '202304789012', '1782846697_SSM Aufa.jpg', '1782846972_weddinh hall syed.jpg', NULL, 'Pending'),
-(15, 'The Glam Glass House', 'Tiara Melaka Golf & Country Club, Jalan Gapam, 75450 Ayer Keroh, Melaka, Malaysia', 1000, 0.00, '', 11, '123456789245', '1782869578_SSM Arash.jpg', '1782869578_The Glam Glass House.jpg', NULL, 'Pending');
+INSERT INTO `venue` (`venue_id`, `venue_name`, `venue_location`, `venue_capacity`, `venue_price`, `venue_desc`, `owner_id`, `venue_image`, `admin_id`, `venue_status`) VALUES
+(2, 'Orkid House', 'No 12, Jalan Melaka Raya 5, 75000 Melaka, Malaysia', 1000, 0.00, '', 1, '1782751123_weddingVenue1.jpg', NULL, 'Approved'),
+(8, 'Dewan Serbaguna Semarak', 'No. 25, Jalan S2 B12, Green Street Homes, Seremban 2', 700, 0.00, '', 6, '1782805945_gambar hall aufa.jpg', NULL, 'Approved'),
+(9, 'Rose Glass Hall', 'Lot PT 7658, DT Jalan Autocity 2, Persiaran Autocity, Jalan Hang Tuah Jaya, 76100 Durian Tunggal', 1000, 0.00, '', 6, '1782840796_Rose Glass Hall.jpg', NULL, 'Approved'),
+(10, 'Daza Villa Wedding Hall', 'Lot 9258, Jalan Kampung Perepat, 42200 Klang, Selangor, Malaysia.', 800, 0.00, '', 9, '1782843664_daud wedding hall.jpg', NULL, 'Approved'),
+(11, 'Ivory Pearl Ballroom', 'No. 55, Jalan Cempaka 8, Taman Indah, 70100 Seremban, Negeri Sembilan', 1500, 0.00, '', 8, '1782844239_wedding hall ammar.jpg', NULL, 'Pending'),
+(12, 'Emerald Crown Hall', 'No. 9, Jalan Sutera 3, Bandar Impian, 40150 Shah Alam, Selangor', 500, 0.00, '', 9, '1782844569_pelamin1.jpg', NULL, 'Pending'),
+(13, 'Crystal Blossom Ballroom', 'No. 88, Persiaran Mutiara 2, Bandar Harmoni, 81100 Johor Bahru, Johor', 1000, 0.00, '', 7, '1782844977_wedding abbas.jpg', NULL, 'Pending'),
+(14, 'The Ever After Hall', 'No. 35, Jalan Seri Putra 4, Bandar Seri Putra, 43000 Bangi, Selangor', 700, 0.00, '', 10, '1782846972_weddinh hall syed.jpg', NULL, 'Pending'),
+(15, 'The Glam Glass House', 'Tiara Melaka Golf & Country Club, Jalan Gapam, 75450 Ayer Keroh, Melaka, Malaysia', 1000, 0.00, '', 11, '1782869578_The Glam Glass House.jpg', NULL, 'Pending');
 
 -- --------------------------------------------------------
 

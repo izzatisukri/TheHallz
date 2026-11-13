@@ -108,7 +108,7 @@ if ($pkg_result) {
 }
 
 $my_bookings = [];
-$booking_sql = "SELECT b.*, v.venue_name, v.venue_id, p.package_name 
+$booking_sql = "SELECT b.*, v.venue_name, v.venue_id, v.venue_price, p.package_name, p.package_price 
                 FROM booking b
                 JOIN venue v ON b.venue_id = v.venue_id
                 LEFT JOIN package p ON b.package_id = p.package_id
@@ -694,6 +694,8 @@ if ($all_ratings_res) {
             border-radius: var(--radius-md);
             padding: 20px;
             margin-top: 15px;
+            max-height: 400px;
+            overflow-y: auto;
         }
 
         .booking-item-row {
@@ -1209,7 +1211,7 @@ if ($all_ratings_res) {
 
     <!-- MODAL: MY BOOKINGS -->
     <div id="modal-my-bookings" class="modal-overlay">
-        <div class="modal-box-booking modal-fade-in" style="max-width: 460px; background-color: var(--white); border-radius: var(--radius-lg); padding: 32px; box-shadow: 0 20px 30px rgba(0, 0, 0, 0.15);">
+        <div class="modal-box-booking modal-fade-in" style="max-width: 480px; background-color: var(--white); border-radius: var(--radius-lg); padding: 32px; box-shadow: 0 20px 30px rgba(0, 0, 0, 0.15);">
             <h3 id="modal-booking-title" style="text-align: center; font-size: 22px; font-family: 'Playfair Display', serif; margin-bottom: 20px; color: var(--primary-burgundy);">My Booking</h3>
 
             <div class="my-booking-details-box">
@@ -1222,7 +1224,7 @@ if ($all_ratings_res) {
 
     <!-- MODAL: MY PAYMENT -->
     <div id="modal-my-payment" class="modal-overlay">
-        <div class="modal-box-booking modal-fade-in" style="max-width: 460px; background-color: var(--white); border-radius: var(--radius-lg); padding: 32px; box-shadow: 0 20px 30px rgba(0, 0, 0, 0.15);">
+        <div class="modal-box-booking modal-fade-in" style="max-width: 500px; background-color: var(--white); border-radius: var(--radius-lg); padding: 32px; box-shadow: 0 20px 30px rgba(0, 0, 0, 0.15);">
             <h3 id="modal-payment-title" style="text-align: center; font-size: 22px; font-family: 'Playfair Display', serif; margin-bottom: 20px; color: var(--primary-burgundy);">My Payment</h3>
 
             <div class="my-booking-details-box">
@@ -1264,7 +1266,10 @@ if ($all_ratings_res) {
         <table id="table-user-bookings">
             <tbody>
                 <?php foreach ($my_bookings as $b_row): ?>
-                    <tr data-venueid="<?php echo $b_row['venue_id']; ?>">
+                    <?php 
+                        $price_val = !empty($b_row['package_price']) ? $b_row['package_price'] : ($b_row['venue_price'] ?? 0);
+                    ?>
+                    <tr data-venueid="<?php echo $b_row['venue_id']; ?>" data-price="<?php echo $price_val; ?>">
                         <td><?php echo htmlspecialchars($b_row['venue_name']); ?></td>
                         <td><?php echo htmlspecialchars($b_row['package_name'] ?? 'N/A'); ?></td>
                         <td><?php echo htmlspecialchars($b_row['event_date']); ?></td>
@@ -1422,9 +1427,10 @@ if ($all_ratings_res) {
 
         function openMyBookingsModal() {
             switchTab('bookings');
-            document.getElementById('modal-booking-title').textContent = "My Booking";
+            document.getElementById('modal-booking-title').textContent = "My Bookings";
             const rows = document.querySelectorAll('#table-user-bookings tbody tr');
             const targetDetailsContainer = document.getElementById('dynamic-booking-details');
+            
             if (rows.length === 0) {
                 targetDetailsContainer.innerHTML = `
                 <div class="booking-item-row" style="text-align: center; color: #a0aec0; margin-top: 10px;">
@@ -1432,70 +1438,79 @@ if ($all_ratings_res) {
                 </div>
             `;
             } else {
-                const latestRow = rows[rows.length - 1];
-                const cells = latestRow.querySelectorAll('td');
-                const venueId = latestRow.getAttribute('data-venueid');
+                let allBookingsHtml = '';
+                
+                rows.forEach((row, index) => {
+                    const cells = row.querySelectorAll('td');
+                    const venueId = row.getAttribute('data-venueid');
 
-                const statusText = cells[4].textContent.trim();
-                let statusColor = '#ed8936';
-                const st = statusText.toLowerCase();
-                if (st === 'pending') {
-                    statusColor = '#ed8936';
-                } else if (st === 'completed') {
-                    statusColor = '#3182ce';
-                } else if (st === 'confirmed') {
-                    statusColor = '#38a169';
-                } else if (st === 'rejected' || st === 'cancelled') {
-                    statusColor = '#e53e3e';
-                }
-
-                let ratingHtml = '';
-                if (st === 'completed') {
-                    const currentRating = venueRatingsStorage[venueId] || 0;
-                    const isAlreadyRated = hasRatedVenue[venueId];
-
-                    if (isAlreadyRated) {
-                        let starsDisplay = '';
-                        for (let i = 1; i <= 5; i++) {
-                            starsDisplay += `<i class="fa-solid fa-star ${i <= currentRating ? 'rated' : ''}" style="color: ${i <= currentRating ? '#f6ad55' : '#cbd5e0'};"></i>`;
-                        }
-                        ratingHtml = `
-                            <div class="booking-item-row" style="margin-top: 15px; border-top: 1px dashed var(--border-color); padding-top: 12px; text-align: center;">
-                                <div style="display: flex; justify-content: center; gap: 5px; font-size: 18px; margin-bottom: 5px;">${starsDisplay}</div>
-                                <p style="color: var(--primary-burgundy); font-weight: 700; font-size: 13.5px;">Thank you for your rating!</p>
-                            </div>
-                        `;
-                    } else {
-                        ratingHtml = `
-                            <div class="booking-item-row" style="margin-top: 15px; border-top: 1px dashed var(--border-color); padding-top: 10px;">
-                                <strong>Rate this Venue:</strong>
-                                <form method="POST" action="">
-                                    <input type="hidden" name="action_type" value="submit_rating">
-                                    <input type="hidden" name="rate_venue_id" value="${venueId}">
-                                    <input type="hidden" id="selected-rating-val" name="rating_stars" value="${currentRating}">
-                                    <div class="star-rating-container" id="star-container">
-                                        <i class="fa-solid fa-star ${currentRating >= 1 ? 'rated' : ''}" data-val="1" onclick="setRating(1)"></i>
-                                        <i class="fa-solid fa-star ${currentRating >= 2 ? 'rated' : ''}" data-val="2" onclick="setRating(2)"></i>
-                                        <i class="fa-solid fa-star ${currentRating >= 3 ? 'rated' : ''}" data-val="3" onclick="setRating(3)"></i>
-                                        <i class="fa-solid fa-star ${currentRating >= 4 ? 'rated' : ''}" data-val="4" onclick="setRating(4)"></i>
-                                        <i class="fa-solid fa-star ${currentRating >= 5 ? 'rated' : ''}" data-val="5" onclick="setRating(5)"></i>
-                                    </div>
-                                    <button type="submit" class="btn-primary" style="margin-top: 10px; padding: 6px 14px; font-size: 12px;">Submit Rating</button>
-                                </form>
-                            </div>
-                        `;
+                    const statusText = cells[4].textContent.trim();
+                    let statusColor = '#ed8936';
+                    const st = statusText.toLowerCase();
+                    if (st === 'pending') {
+                        statusColor = '#ed8936';
+                    } else if (st === 'completed') {
+                        statusColor = '#3182ce';
+                    } else if (st === 'confirmed') {
+                        statusColor = '#38a169';
+                    } else if (st === 'rejected' || st === 'cancelled') {
+                        statusColor = '#e53e3e';
                     }
-                }
 
-                targetDetailsContainer.innerHTML = `
-                <div class="booking-item-row"><strong>Venue Name :</strong> ${cells[0].textContent}</div>
-                <div class="booking-item-row"><strong>Event Date :</strong> ${cells[2].textContent}</div>
-                <div class="booking-item-row"><strong>Package :</strong> ${cells[1].textContent}</div>
-                <div class="booking-item-row"><strong>Guest :</strong> ${cells[3].textContent.replace(' pax', '')}</div>
-                <div class="booking-item-row"><strong>Status :</strong> <span style="color: ${statusColor}; font-weight: bold;">${statusText}</span></div>
-                <div class="booking-item-row"><strong>Booked On :</strong> ${cells[5].textContent}</div>
-                ${ratingHtml}
-            `;
+                    let ratingHtml = '';
+                    if (st === 'completed') {
+                        const currentRating = venueRatingsStorage[venueId] || 0;
+                        const isAlreadyRated = hasRatedVenue[venueId];
+
+                        if (isAlreadyRated) {
+                            let starsDisplay = '';
+                            for (let i = 1; i <= 5; i++) {
+                                starsDisplay += `<i class="fa-solid fa-star ${i <= currentRating ? 'rated' : ''}" style="color: ${i <= currentRating ? '#f6ad55' : '#cbd5e0'};"></i>`;
+                            }
+                            ratingHtml = `
+                                <div class="booking-item-row" style="margin-top: 15px; border-top: 1px dashed var(--border-color); padding-top: 12px; text-align: center;">
+                                    <div style="display: flex; justify-content: center; gap: 5px; font-size: 18px; margin-bottom: 5px;">${starsDisplay}</div>
+                                    <p style="color: var(--primary-burgundy); font-weight: 700; font-size: 13.5px;">Thank you for your rating!</p>
+                                </div>
+                            `;
+                        } else {
+                            ratingHtml = `
+                                <div class="booking-item-row" style="margin-top: 15px; border-top: 1px dashed var(--border-color); padding-top: 10px;">
+                                    <strong>Rate this Venue:</strong>
+                                    <form method="POST" action="">
+                                        <input type="hidden" name="action_type" value="submit_rating">
+                                        <input type="hidden" name="rate_venue_id" value="${venueId}">
+                                        <input type="hidden" id="selected-rating-val-${index}" name="rating_stars" value="${currentRating}">
+                                        <div class="star-rating-container" id="star-container-${index}">
+                                            <i class="fa-solid fa-star ${currentRating >= 1 ? 'rated' : ''}" data-val="1" onclick="setRatingIndexed(1, ${index})"></i>
+                                            <i class="fa-solid fa-star ${currentRating >= 2 ? 'rated' : ''}" data-val="2" onclick="setRatingIndexed(2, ${index})"></i>
+                                            <i class="fa-solid fa-star ${currentRating >= 3 ? 'rated' : ''}" data-val="3" onclick="setRatingIndexed(3, ${index})"></i>
+                                            <i class="fa-solid fa-star ${currentRating >= 4 ? 'rated' : ''}" data-val="4" onclick="setRatingIndexed(4, ${index})"></i>
+                                            <i class="fa-solid fa-star ${currentRating >= 5 ? 'rated' : ''}" data-val="5" onclick="setRatingIndexed(5, ${index})"></i>
+                                        </div>
+                                        <button type="submit" class="btn-primary" style="margin-top: 10px; padding: 6px 14px; font-size: 12px;">Submit Rating</button>
+                                    </form>
+                                </div>
+                            `;
+                        }
+                    }
+
+                    const borderStyle = index > 0 ? 'border-top: 2px solid var(--border-color); margin-top: 20px; padding-top: 20px;' : '';
+
+                    allBookingsHtml += `
+                        <div style="${borderStyle}">
+                            <div class="booking-item-row"><strong>Venue Name :</strong> ${cells[0].textContent}</div>
+                            <div class="booking-item-row"><strong>Event Date :</strong> ${cells[2].textContent}</div>
+                            <div class="booking-item-row"><strong>Package :</strong> ${cells[1].textContent}</div>
+                            <div class="booking-item-row"><strong>Guest :</strong> ${cells[3].textContent.replace(' pax', '')}</div>
+                            <div class="booking-item-row"><strong>Status :</strong> <span style="color: ${statusColor}; font-weight: bold;">${statusText}</span></div>
+                            <div class="booking-item-row"><strong>Booked On :</strong> ${cells[5].textContent}</div>
+                            ${ratingHtml}
+                        </div>
+                    `;
+                });
+
+                targetDetailsContainer.innerHTML = allBookingsHtml;
             }
 
             document.getElementById('modal-my-bookings').style.display = 'flex';
@@ -1503,7 +1518,144 @@ if ($all_ratings_res) {
 
         function openMyPaymentModal() {
             switchTab('payment');
+            document.getElementById('modal-payment-title').textContent = "My Payment";
+            const rows = document.querySelectorAll('#table-user-bookings tbody tr');
+            const targetPaymentContainer = document.getElementById('dynamic-payment-details');
+
+            if (rows.length === 0) {
+                targetPaymentContainer.innerHTML = `
+                    <div class="booking-item-row" style="text-align: center; color: #a0aec0; margin-top: 10px;">
+                        <i class="fa-solid fa-receipt fa-2x" style="margin-bottom: 10px; color: var(--border-color);"></i>
+                        <p><em>No payment records found.</em></p>
+                    </div>
+                `;
+            } else {
+                let allPaymentsHtml = '';
+
+                rows.forEach((row, index) => {
+                    const cells = row.querySelectorAll('td');
+                    const venueName = cells[0].textContent;
+                    const packageName = cells[1].textContent;
+                    const eventDate = cells[2].textContent;
+                    const statusText = cells[4].textContent.trim();
+                    const st = statusText.toLowerCase();
+
+                    const basePrice = parseFloat(row.getAttribute('data-price')) || 0;
+                    const depositAmount = basePrice > 0 ? basePrice : 400.00;
+                    const availableBalance = 300.00; // Contoh baki akaun demo ditetapkan sebanyak RM300
+
+                    const borderStyle = index > 0 ? 'border-top: 2px solid var(--border-color); margin-top: 20px; padding-top: 20px;' : '';
+
+                    let paymentBody = '';
+
+                    if (st === 'pending') {
+                        paymentBody = `
+                            <div style="background-color: #fffaf0; border: 1px solid #feebc8; border-radius: var(--radius-sm); padding: 15px; margin-top: 10px; text-align: center;">
+                                <i class="fa-solid fa-hourglass-half" style="color: #dd6b20; font-size: 24px; margin-bottom: 8px;"></i>
+                                <h5 style="color: #c05621; font-size: 15px; margin-bottom: 4px; font-weight: 700;">Awaiting Owner Approval</h5>
+                                <p style="color: #7b341e; font-size: 13px; line-height: 1.5;">
+                                    Please be informed that payment can only be processed once your booking has been officially confirmed by the venue owner.
+                                </p>
+                            </div>
+                        `;
+                    } else if (st === 'confirmed' || st === 'completed') {
+                        const isInsufficient = availableBalance < depositAmount;
+
+                        paymentBody = `
+                            <div style="background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 16px; margin-top: 10px;">
+                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+                                    <i class="fa-solid fa-building-columns" style="color: var(--primary-burgundy); font-size: 16px;"></i>
+                                    <div>
+                                        <div style="font-size: 14px; font-weight: 700; color: var(--text-dark);">Online Banking Payment</div>
+                                        <div style="font-size: 11.5px; color: var(--text-muted);">Wedding Hall Management System</div>
+                                    </div>
+                                </div>
+
+                                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: 700; color: var(--text-dark); margin-bottom: 12px;">
+                                    <span>Deposit Amount</span>
+                                    <span style="font-size: 16px; color: var(--primary-burgundy);">RM ${depositAmount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                                </div>
+
+                                <div style="font-size: 12.5px; color: var(--text-muted); margin-bottom: 6px;">Select your bank</div>
+                                <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; font-size: 13.5px;">
+                                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;"><input type="radio" name="bank_${index}" checked> Maybank</label>
+                                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;"><input type="radio" name="bank_${index}"> CIMB Bank</label>
+                                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;"><input type="radio" name="bank_${index}"> RHB Bank</label>
+                                </div>
+
+                                <div style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 4px;">Demo account balance (simulation only)</div>
+                                <div style="margin-bottom: 8px;">
+                                    <label style="display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 3px;">Available balance (RM)</label>
+                                    <input type="text" value="${availableBalance.toFixed(0)}" readonly style="width: 100%; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-page); font-size: 13px; color: var(--text-dark);">
+                                </div>
+                                <div style="margin-bottom: 12px;">
+                                    <label style="display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 3px;">Payment amount (RM)</label>
+                                    <input type="text" value="${depositAmount.toFixed(0)}" readonly style="width: 100%; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-page); font-size: 13px; color: var(--text-dark);">
+                                </div>
+
+                                ${st === 'confirmed' ? `
+                                    ${isInsufficient ? `
+                                        <div style="background-color: #fff5f5; border: 1px solid #fed7d7; border-radius: 6px; padding: 10px; display: flex; align-items: flex-start; gap: 8px; margin-bottom: 12px;">
+                                            <i class="fa-solid fa-circle-xmark" style="color: #e53e3e; margin-top: 2px;"></i>
+                                            <div style="font-size: 12px; color: #9b2c2c;">
+                                                <strong>Payment Unsuccessful</strong><br>
+                                                Transaction could not be completed due to insufficient account balance. Please top up your account to proceed.
+                                            </div>
+                                        </div>
+                                        <button type="button" class="btn-primary" style="width: 100%; padding: 10px; font-size: 13px; opacity: 0.6; cursor: not-allowed;" disabled>
+                                            <i class="fa-solid fa-lock"></i> Pay Now (Insufficient Funds)
+                                        </button>
+                                    ` : `
+                                        <div style="background-color: #f0fff4; border: 1px solid #c6f6d5; border-radius: 6px; padding: 10px; display: flex; align-items: flex-start; gap: 8px; margin-bottom: 12px;">
+                                            <i class="fa-solid fa-circle-check" style="color: #38a169; margin-top: 2px;"></i>
+                                            <div style="font-size: 12px; color: #22543d;">
+                                                <strong>Sufficient Balance</strong><br>
+                                                The simulated bank account has enough funds to proceed with payment.
+                                            </div>
+                                        </div>
+                                        <button type="button" class="btn-primary" style="width: 100%; padding: 10px; font-size: 13px;" onclick="simulatePaymentProcess('${venueName}', ${depositAmount})">
+                                            <i class="fa-solid fa-lock"></i> Pay Now (Simulated)
+                                        </button>
+                                    `}
+                                ` : `
+                                    <div style="text-align: center; color: #3182ce; font-weight: 700; font-size: 13px; margin-top: 8px;">
+                                        <i class="fa-solid fa-circle-check"></i> Payment Completed Successfully
+                                    </div>
+                                `}
+                                <div style="font-size: 10.5px; color: var(--text-muted); text-align: center; margin-top: 8px;">
+                                    Interactive example only. This does not connect to a real bank or process payments.
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        paymentBody = `
+                            <div style="background-color: #fff5f5; border: 1px solid #fed7d7; border-radius: var(--radius-sm); padding: 12px; margin-top: 10px; text-align: center; color: #e53e3e; font-size: 13px;">
+                                <i class="fa-solid fa-circle-xmark"></i> Booking ${statusText}. No payment required.
+                            </div>
+                        `;
+                    }
+
+                    const badgeColor = st === 'confirmed' ? '#38a169' : (st === 'pending' ? '#ed8936' : (st === 'completed' ? '#3182ce' : '#e53e3e'));
+
+                    allPaymentsHtml += `
+                        <div style="${borderStyle}">
+                            <div class="booking-item-row"><strong>Venue Name :</strong> ${venueName}</div>
+                            <div class="booking-item-row"><strong>Package :</strong> ${packageName}</div>
+                            <div class="booking-item-row"><strong>Event Date :</strong> ${eventDate}</div>
+                            <div class="booking-item-row"><strong>Status :</strong> <span style="color: ${badgeColor}; font-weight: bold;">${statusText}</span></div>
+                            ${paymentBody}
+                        </div>
+                    `;
+                });
+
+                targetPaymentContainer.innerHTML = allPaymentsHtml;
+            }
+
             document.getElementById('modal-my-payment').style.display = 'flex';
+        }
+
+        function simulatePaymentProcess(venueName, amount) {
+            triggerToast(`Simulating payment of RM ${amount.toLocaleString(undefined, {minimumFractionDigits: 2})} for ${venueName}... Successful!`);
         }
 
         function setRating(val) {
@@ -1511,6 +1663,18 @@ if ($all_ratings_res) {
             const stars = document.querySelectorAll('#star-container .fa-star');
             stars.forEach((star, index) => {
                 if (index < val) {
+                    star.classList.add('rated');
+                } else {
+                    star.classList.remove('rated');
+                }
+            });
+        }
+
+        function setRatingIndexed(val, index) {
+            document.getElementById(`selected-rating-val-${index}`).value = val;
+            const stars = document.querySelectorAll(`#star-container-${index} .fa-star`);
+            stars.forEach((star, sIndex) => {
+                if (sIndex < val) {
                     star.classList.add('rated');
                 } else {
                     star.classList.remove('rated');

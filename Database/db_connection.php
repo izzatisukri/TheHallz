@@ -3,7 +3,7 @@ $host = "localhost";
 $user = "root";
 $pass = "";
 $db   = "wedding_db";
-$port = 3308;
+$port = 3309;
 $conn = new mysqli($host, $user, $pass, $db, $port);
 
 if ($conn->connect_error) {

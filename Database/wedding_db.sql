@@ -2,8 +2,8 @@
 -- version 5.2.1
 -- https://www.phpmyadmin.net/
 --
--- Host: 127.0.0.1:3307
--- Generation Time: Jun 30, 2026 at 10:10 PM
+-- Host: 127.0.0.1:3309
+-- Generation Time: Nov 13, 2026 at 05:13 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -66,9 +66,12 @@ CREATE TABLE `booking` (
 INSERT INTO `booking` (`booking_id`, `client_id`, `venue_id`, `package_id`, `booking_date`, `event_date`, `num_of_guests`, `bookingstatus`) VALUES
 (1, 1, 2, 1, '2026-06-29', '2026-11-19', 700, 'Confirmed'),
 (2, 8, 2, 1, '2026-06-30', '2026-10-01', 1000, 'Confirmed'),
-(3, 8, 8, 4, '2026-06-30', '2026-10-15', 700, 'Confirmed'),
-(4, 7, 8, 4, '2026-06-30', '2026-10-15', 700, 'Pending'),
-(5, 10, 2, 1, '2026-06-30', '2026-10-15', 500, 'Pending');
+(3, 8, 8, 4, '2026-06-30', '2026-10-15', 700, 'Pending'),
+(4, 7, 8, 4, '2026-06-30', '2026-10-15', 700, 'Confirmed'),
+(5, 10, 2, 1, '2026-06-30', '2026-10-15', 500, 'Pending'),
+(7, 12, 9, 5, '2026-07-01', '2026-12-31', 800, 'Completed'),
+(8, 13, 8, 4, '2026-07-01', '2026-10-02', 700, 'Completed'),
+(9, 7, 2, 1, '2026-07-01', '2026-10-02', 700, 'Pending');
 
 -- --------------------------------------------------------
 
@@ -96,7 +99,10 @@ INSERT INTO `client` (`client_id`, `client_name`, `client_email`, `client_phonen
 (7, 'Ameena Sofia', 'ameena@gmail.com', '0186558324', '$2y$10$b/Sco1SGwlqX7wlknycMGOQR8Z6y3VkkM9ZnEUuh0I4EjpslTlxTq', 'client', 'Active'),
 (8, 'Hani Dahlea', 'hani@gmail.com', '0163060370', '$2y$10$PQNa37BC0kKJPMWTHAcfcu1gAjuZQ78Db5weMnQtP1XQes4HftAzq', 'client', 'Active'),
 (9, 'Batrisyia', 'batrisyia@gmail.com', '0129660952', '$2y$10$cnXV92HDRShCZs3.EngD4.cnJYjQT1yQzmLsIe3H.wVLhV151B/4S', 'client', 'Active'),
-(10, 'Mariah Abu Bakar', 'mariah@gmail.com', '01156550722', '$2y$10$jU5r8f3mrYH0gbtZRyJg.OuaCfCficy0Y0V7M/6Sc5mia3qhKz0U6', 'client', 'Active');
+(10, 'Mariah Abu Bakar', 'mariah@gmail.com', '01156550722', '$2y$10$jU5r8f3mrYH0gbtZRyJg.OuaCfCficy0Y0V7M/6Sc5mia3qhKz0U6', 'client', 'Active'),
+(11, 'Daneen Ameena', 'daneen@gmail.com', '0123456789', '$2y$10$9LTIpRD.ADAhtA5ZkyNHM.3ixVTvrGbIgTCKS0Y3xrE71pnsLh5Ea', 'client', 'Active'),
+(12, 'Muhammad', 'muhammad@gmail.com', '0187786542', '$2y$10$J0.ocgE45p6UrBcz5cJLsOuZxupQMdqA6UYVcMqgiRHhCXXwk3fdq', 'client', 'Active'),
+(13, 'Nadia Ahmad', 'nadia@gmail.com', '01156778907', '$2y$10$qbi4w5Ha4f/RMffKgQO5LOgGdqjZxTtO.qhDfTFEG.bn0hURxyfhW', 'client', 'Active');
 
 -- --------------------------------------------------------
 
@@ -120,7 +126,38 @@ INSERT INTO `package` (`package_id`, `package_name`, `package_price`, `package_i
 (1, 'Basic Package', 12000.00, 'Standard pelamin setup\r\nStandard backdrop setup\r\nSimple floral decoration\r\n1 nasi (Nasi putih)\r\n2 lauk (Ayam masak merah + Daging masak hitam)\r\n1 sayur (Campur)\r\n1 buah (Tembikai)\r\n1 air (Sirap)', 2),
 (4, 'Premium Package', 25000.00, 'Pelamin setup with floral design\r\nUpgraded backdrop design (Fabric drapping)\r\nMedium floral decoration\r\n3 nasi (Nasi putih)\r\n2 lauk (Ayam masak merah + Daging masak hitam)\r\n1 sayur (Campur)\r\n2 buah (Tembikai + Oren)\r\n2 air (Sirap + Oren)\r\n1 dessert (Kek Brownies)', 8),
 (5, 'Premium Package', 25000.00, '-Nasi Putih\r\n-Nasi Minyak\r\n-Ayam Masak Merah\r\n-Daging Masak Hitam\r\n-Kambing Kuzi\r\n-Acar timun\r\n-Ulam-ulaman\r\n-Kuih Nona Manis\r\n-Butter Cake\r\n-Air Sunquick\r\n-Air Anggur', 9),
-(6, 'Silver Package', 15000.00, 'Nasi putih\r\nNasi tomato\r\nAyam masak merah\r\nAyam berempah\r\nDaging kari\r\nApam Balik', 10);
+(6, 'Silver Package', 15000.00, 'Nasi putih\nNasi tomato\nAyam masak merah\nAyam berempah\nDaging kari\nApam Balik', 10),
+(7, 'Silver Package', 15000.00, 'Nasi putih\r\nNasi tomato\r\nAyam masak merah\r\nAyam berempah\r\nDaging kari\r\nApam Balik', 13);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `payment`
+--
+
+CREATE TABLE `payment` (
+  `payment_id` int(11) NOT NULL,
+  `booking_id` int(11) NOT NULL,
+  `client_id` int(11) NOT NULL,
+  `payment_amount` decimal(10,2) NOT NULL,
+  `payment_date` datetime NOT NULL,
+  `payment_status` varchar(50) NOT NULL,
+  `payment_receipt` varchar(255) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `rating`
+--
+
+CREATE TABLE `rating` (
+  `rating_id` int(11) NOT NULL,
+  `booking_id` int(11) NOT NULL,
+  `venue_id` int(11) NOT NULL,
+  `client_id` int(11) NOT NULL,
+  `rating_star` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -155,7 +192,8 @@ INSERT INTO `venue` (`venue_id`, `venue_name`, `venue_location`, `venue_capacity
 (11, 'Ivory Pearl Ballroom', 'No. 55, Jalan Cempaka 8, Taman Indah, 70100 Seremban, Negeri Sembilan', 1500, 0.00, '', 8, '202401123456', '1782844239_SSM.jpg', '1782844239_wedding hall ammar.jpg', NULL, 'Pending'),
 (12, 'Emerald Crown Hall', 'No. 9, Jalan Sutera 3, Bandar Impian, 40150 Shah Alam, Selangor', 500, 0.00, '', 9, '202208998877', '1782844569_SSM.jpg', '1782844569_pelamin1.jpg', NULL, 'Pending'),
 (13, 'Crystal Blossom Ballroom', 'No. 88, Persiaran Mutiara 2, Bandar Harmoni, 81100 Johor Bahru, Johor', 1000, 0.00, '', 7, '202205456789', '1782844977_SSM.jpg', '1782844977_wedding abbas.jpg', NULL, 'Pending'),
-(14, 'The Ever After Hall', 'No. 35, Jalan Seri Putra 4, Bandar Seri Putra, 43000 Bangi, Selangor', 700, 0.00, '', 10, '202304789012', '1782846697_SSM Aufa.jpg', '1782846972_weddinh hall syed.jpg', NULL, 'Pending');
+(14, 'The Ever After Hall', 'No. 35, Jalan Seri Putra 4, Bandar Seri Putra, 43000 Bangi, Selangor', 700, 0.00, '', 10, '202304789012', '1782846697_SSM Aufa.jpg', '1782846972_weddinh hall syed.jpg', NULL, 'Pending'),
+(15, 'The Glam Glass House', 'Tiara Melaka Golf & Country Club, Jalan Gapam, 75450 Ayer Keroh, Melaka, Malaysia', 1000, 0.00, '', 11, '123456789245', '1782869578_SSM Arash.jpg', '1782869578_The Glam Glass House.jpg', NULL, 'Pending');
 
 -- --------------------------------------------------------
 
@@ -187,7 +225,8 @@ INSERT INTO `venue_owner` (`owner_id`, `owner_name`, `owner_email`, `owner_phone
 (7, 'Abbas Abqari', 'abbas@gmail.com', '0192004589', '$2y$10$a26nG5trERd92RycPHfRd.NrGQ4tn56OkSHgmbW9Qw64A/hmTe6DK', 'venue_owner', 'Active'),
 (8, 'Ammar Zahrain', 'ammar@gmail.com', '01945781180', '$2y$10$/Q.tIYKBmyetYOny2zTnE.VzcyxmA6YC5E91XASaEsnLdWvy8De3K', 'venue_owner', 'Active'),
 (9, 'Daud ', 'daud@gmail.com', '01756558907', '$2y$10$5jpUnF.CyfDaLNssLqY9j.sVZWMWNkuIopXdHSN39bLhqLObgdhY.', 'venue_owner', 'Active'),
-(10, 'Syed Muhd', 'syed@gmail.com', '01157789907', '$2y$10$VRvSm6FOT77pomo2w9cx2.uQ/oqdR12mmzqebq7fl14GByjP/1bf2', 'venue_owner', 'Active');
+(10, 'Syed Muhd', 'syed@gmail.com', '01157789907', '$2y$10$VRvSm6FOT77pomo2w9cx2.uQ/oqdR12mmzqebq7fl14GByjP/1bf2', 'venue_owner', 'Active'),
+(11, 'Arash Omara', 'arash@gmail.com', '0156782568', '$2y$10$YacP3sJzR12BFVjR/7AyzO.IUhGXHNo.k05GRlyWmqoMYU1sP5eOK', 'venue_owner', 'Active');
 
 --
 -- Indexes for dumped tables
@@ -224,6 +263,23 @@ ALTER TABLE `package`
   ADD KEY `package_ibfk_1` (`venue_id`);
 
 --
+-- Indexes for table `payment`
+--
+ALTER TABLE `payment`
+  ADD PRIMARY KEY (`payment_id`),
+  ADD KEY `booking_id` (`booking_id`),
+  ADD KEY `client_id` (`client_id`);
+
+--
+-- Indexes for table `rating`
+--
+ALTER TABLE `rating`
+  ADD PRIMARY KEY (`rating_id`),
+  ADD UNIQUE KEY `unique_booking_rating` (`booking_id`),
+  ADD KEY `client_id` (`client_id`),
+  ADD KEY `venue_id` (`venue_id`);
+
+--
 -- Indexes for table `venue`
 --
 ALTER TABLE `venue`
@@ -252,31 +308,43 @@ ALTER TABLE `admin`
 -- AUTO_INCREMENT for table `booking`
 --
 ALTER TABLE `booking`
-  MODIFY `booking_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `booking_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `client`
 --
 ALTER TABLE `client`
-  MODIFY `client_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `client_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT for table `package`
 --
 ALTER TABLE `package`
-  MODIFY `package_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `package_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+
+--
+-- AUTO_INCREMENT for table `payment`
+--
+ALTER TABLE `payment`
+  MODIFY `payment_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `rating`
+--
+ALTER TABLE `rating`
+  MODIFY `rating_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `venue`
 --
 ALTER TABLE `venue`
-  MODIFY `venue_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+  MODIFY `venue_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 
 --
 -- AUTO_INCREMENT for table `venue_owner`
 --
 ALTER TABLE `venue_owner`
-  MODIFY `owner_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `owner_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- Constraints for dumped tables
@@ -295,6 +363,20 @@ ALTER TABLE `booking`
 --
 ALTER TABLE `package`
   ADD CONSTRAINT `package_ibfk_1` FOREIGN KEY (`venue_id`) REFERENCES `venue` (`venue_id`);
+
+--
+-- Constraints for table `payment`
+--
+ALTER TABLE `payment`
+  ADD CONSTRAINT `payment_ibfk_1` FOREIGN KEY (`booking_id`) REFERENCES `booking` (`booking_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `payment_ibfk_2` FOREIGN KEY (`client_id`) REFERENCES `client` (`client_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `rating`
+--
+ALTER TABLE `rating`
+  ADD CONSTRAINT `rating_ibfk_1` FOREIGN KEY (`client_id`) REFERENCES `client` (`client_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `rating_ibfk_2` FOREIGN KEY (`venue_id`) REFERENCES `venue` (`venue_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `venue`

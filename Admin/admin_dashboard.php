@@ -1,5 +1,89 @@
 <?php
+session_start();
 include 'db_connection.php';
+
+$msg_toast = "";
+if (isset($_SESSION['toast_message'])) {
+    $msg_toast = $_SESSION['toast_message'];
+    unset($_SESSION['toast_message']);
+}
+
+// Kenal pasti jadual admin & kolum jika ada
+$admin_table = "";
+$admin_id_col = "";
+$admin_name_col = "";
+$admin_phone_col = "";
+
+$check_admin_tbl = mysqli_query($conn, "SHOW TABLES LIKE 'admin'");
+if ($check_admin_tbl && mysqli_num_rows($check_admin_tbl) > 0) {
+    $admin_table = "admin";
+    $cols_res = mysqli_query($conn, "SHOW COLUMNS FROM admin");
+    if ($cols_res) {
+        while ($c_row = mysqli_fetch_assoc($cols_res)) {
+            $field = $c_row['Field'];
+            if (stripos($field, 'id') !== false && $admin_id_col === "") $admin_id_col = $field;
+            if (stripos($field, 'name') !== false && $admin_name_col === "") $admin_name_col = $field;
+            if (stripos($field, 'phone') !== false || stripos($field, 'phonenum') !== false || stripos($field, 'tel') !== false) {
+                $admin_phone_col = $field;
+            }
+        }
+    }
+}
+
+// PROSES EDIT PROFILE ADMIN
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action_type']) && $_POST['action_type'] == 'update_admin_profile') {
+    $new_admin_name = trim($_POST['edit_admin_name']);
+    $new_admin_phone = trim($_POST['edit_admin_phone']);
+
+    if ($new_admin_name === '') {
+        $_SESSION['toast_message'] = "Please enter a name.";
+    } else {
+        $_SESSION['admin_profile_name'] = $new_admin_name;
+        $_SESSION['admin_profile_phone'] = $new_admin_phone;
+
+        if ($admin_table !== "" && $admin_name_col !== "") {
+            $esc_name = mysqli_real_escape_string($conn, $new_admin_name);
+            $esc_phone = mysqli_real_escape_string($conn, $new_admin_phone);
+            $set_parts = ["`$admin_name_col` = '$esc_name'"];
+            if ($admin_phone_col !== "") {
+                $set_parts[] = "`$admin_phone_col` = '$esc_phone'";
+            }
+            $where_clause = "";
+            if ($admin_id_col !== "" && isset($_SESSION['admin_id'])) {
+                $esc_id = mysqli_real_escape_string($conn, $_SESSION['admin_id']);
+                $where_clause = " WHERE `$admin_id_col` = '$esc_id'";
+            }
+            mysqli_query($conn, "UPDATE `$admin_table` SET " . implode(", ", $set_parts) . $where_clause);
+        }
+
+        $_SESSION['toast_message'] = "Profile updated successfully!";
+    }
+
+    header("Location: " . $_SERVER['PHP_SELF']);
+    exit();
+}
+
+$admin_name = isset($_SESSION['admin_profile_name']) && $_SESSION['admin_profile_name'] !== '' ? $_SESSION['admin_profile_name'] : "Admin";
+$admin_phone = isset($_SESSION['admin_profile_phone']) ? $_SESSION['admin_profile_phone'] : "";
+
+if ($admin_table !== "" && $admin_name_col !== "" && !isset($_SESSION['admin_profile_name'])) {
+    $select_cols = "`$admin_name_col`" . ($admin_phone_col !== "" ? ", `$admin_phone_col`" : "");
+    $where_clause = "";
+    if ($admin_id_col !== "" && isset($_SESSION['admin_id'])) {
+        $esc_id = mysqli_real_escape_string($conn, $_SESSION['admin_id']);
+        $where_clause = " WHERE `$admin_id_col` = '$esc_id'";
+    }
+    $adm_q = mysqli_query($conn, "SELECT $select_cols FROM `$admin_table` $where_clause LIMIT 1");
+    if ($adm_q && mysqli_num_rows($adm_q) > 0) {
+        $adm_row = mysqli_fetch_assoc($adm_q);
+        if (!empty($adm_row[$admin_name_col])) {
+            $admin_name = $adm_row[$admin_name_col];
+        }
+        if ($admin_phone_col !== "" && isset($adm_row[$admin_phone_col])) {
+            $admin_phone = $adm_row[$admin_phone_col];
+        }
+    }
+}
 
 $venue_query = "SELECT venue_id, venue_name FROM venue";
 $venue_result = mysqli_query($conn, $venue_query);
@@ -51,19 +135,44 @@ $pct_2 = ($rating_counts[2] / $max_rating_count) * 100;
 $pct_1 = ($rating_counts[1] / $max_rating_count) * 100;
 
 // -------------------------------------------------------------------------
-// PAYMENT REPORT QUERIES (Merujuk kepada table 'payment')
+// PAYMENT REPORT QUERIES (Merujuk kepada table 'booking' dan 'payment')
 // -------------------------------------------------------------------------
 $payment_count_query = "SELECT 
-    SUM(CASE WHEN payment_status = 'Paid' THEN 1 ELSE 0 END) as successful_payments,
-    SUM(CASE WHEN payment_status = 'Failed' THEN 1 ELSE 0 END) as failed_payments,
-    SUM(CASE WHEN payment_status = 'Pending' THEN 1 ELSE 0 END) as pending_status_count,
-    SUM(CASE WHEN payment_status = 'Paid' THEN payment_amount ELSE 0 END) as total_received_amount,
-    SUM(CASE WHEN payment_status = 'Pending' THEN payment_amount ELSE 0 END) as pending_amount,
-    COUNT(payment_id) as total_transactions
-FROM payment";
+    SUM(CASE 
+        WHEN LOWER(TRIM(COALESCE(b.bookingstatus, ''))) IN ('confirmed', 'completed')
+         AND LOWER(TRIM(COALESCE(p.payment_status, ''))) = 'paid'
+        THEN 1 ELSE 0 
+    END) as successful_payments,
+    SUM(CASE 
+        WHEN LOWER(TRIM(COALESCE(b.bookingstatus, ''))) IN ('confirmed', 'completed')
+         AND LOWER(TRIM(COALESCE(p.payment_status, ''))) <> 'paid'
+        THEN 1 ELSE 0 
+    END) as unpaid_payments,
+    SUM(CASE 
+        WHEN LOWER(TRIM(COALESCE(b.bookingstatus, ''))) = 'pending'
+        THEN 1 ELSE 0 
+    END) as pending_status_count,
+    SUM(CASE 
+        WHEN LOWER(TRIM(COALESCE(p.payment_status, ''))) = 'failed'
+         AND LOWER(TRIM(COALESCE(b.bookingstatus, ''))) NOT IN ('cancelled', 'canceled')
+        THEN 1 ELSE 0 
+    END) as failed_payments,
+    SUM(CASE 
+        WHEN LOWER(TRIM(COALESCE(b.bookingstatus, ''))) IN ('confirmed', 'completed')
+         AND LOWER(TRIM(COALESCE(p.payment_status, ''))) = 'paid'
+        THEN COALESCE(p.payment_amount, 0) ELSE 0 
+    END) as total_received_amount,
+    SUM(CASE 
+        WHEN LOWER(TRIM(COALESCE(b.bookingstatus, ''))) = 'pending'
+        THEN COALESCE(p.payment_amount, 0) ELSE 0 
+    END) as pending_amount,
+    COUNT(b.booking_id) as total_transactions
+FROM booking b
+LEFT JOIN payment p ON b.booking_id = p.booking_id";
 $payment_count_result = mysqli_query($conn, $payment_count_query);
 $payment_counts_data = $payment_count_result ? mysqli_fetch_assoc($payment_count_result) : [
     'successful_payments' => 0, 
+    'unpaid_payments' => 0,
     'failed_payments' => 0, 
     'pending_status_count' => 0,
     'total_received_amount' => 0,
@@ -73,6 +182,7 @@ $payment_counts_data = $payment_count_result ? mysqli_fetch_assoc($payment_count
 
 $total_transactions = $payment_counts_data['total_transactions'] ?? 0;
 $successful_payments = $payment_counts_data['successful_payments'] ?? 0;
+$unpaid_payments = $payment_counts_data['unpaid_payments'] ?? 0;
 $failed_payments = $payment_counts_data['failed_payments'] ?? 0;
 $pending_status_count = $payment_counts_data['pending_status_count'] ?? 0;
 $total_received_amount = $payment_counts_data['total_received_amount'] ?? 0;
@@ -160,7 +270,7 @@ $payment_success_rate = $total_transactions > 0 ? ($successful_payments / $total
     }
 
     .header::after {
-        content: '✨🌸';
+        content: '🌸🍃';
         position: absolute;
         right: 20px;
         top: 50%;
@@ -181,7 +291,7 @@ $payment_success_rate = $total_transactions > 0 ? ($successful_payments / $total
     }
 
     .logo-area::before {
-        content: '💍';
+        content: '🌸';
         width: 38px;
         height: 38px;
         background: var(--accent-pink);
@@ -491,6 +601,12 @@ $payment_success_rate = $total_transactions > 0 ? ($successful_payments / $total
         margin-bottom: 40px;
     }
 
+    .payment-two-by-two {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 20px !important;
+    }
+
     .rating-card-box {
         background-color: var(--bg-page);
         padding: 20px 25px;
@@ -599,6 +715,80 @@ $payment_success_rate = $total_transactions > 0 ? ($successful_payments / $total
         text-align: center;
     }
 
+    .modal-box-edit-profile {
+        background-color: var(--white);
+        width: 90%;
+        max-width: 480px;
+        border-radius: var(--radius-lg);
+        padding: 32px;
+        color: var(--text-dark);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        border: 1px solid var(--border-color);
+        animation: modalSlideUp 0.3s ease;
+        text-align: left;
+    }
+
+    .modal-box-edit-profile h3 {
+        font-family: 'Playfair Display', serif;
+        font-size: 24px;
+        font-weight: 600;
+        color: var(--primary-burgundy);
+        margin-bottom: 18px;
+    }
+
+    .edit-profile-group {
+        margin-bottom: 15px;
+    }
+
+    .edit-profile-group label {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-dark);
+        margin-bottom: 6px;
+    }
+
+    .edit-profile-group input {
+        width: 100%;
+        padding: 11px 14px;
+        border: 1.5px solid #e2e8f0;
+        border-radius: var(--radius-sm);
+        font-size: 13.5px;
+        background-color: var(--bg-page);
+        color: var(--text-dark);
+        transition: all 0.2s ease;
+    }
+
+    .edit-profile-group input:focus {
+        outline: none;
+        background-color: var(--white);
+        border-color: var(--primary-burgundy);
+        box-shadow: 0 0 0 3.5px rgba(122, 34, 79, 0.12);
+    }
+
+    .edit-profile-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 22px;
+    }
+
+    .btn-save-profile {
+        flex: 1;
+        background: linear-gradient(135deg, var(--primary-burgundy) 0%, var(--primary-dark) 100%);
+        color: var(--white);
+        border: none;
+        padding: 11px 20px;
+        font-size: 14px;
+        font-weight: 600;
+        border-radius: 30px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .btn-save-profile:hover {
+        background: linear-gradient(135deg, var(--primary-dark) 0%, #400d27 100%);
+    }
+
     @keyframes modalSlideUp {
         from { opacity: 0; transform: translateY(20px); }
         to { opacity: 1; transform: translateY(0); }
@@ -682,12 +872,13 @@ $payment_success_rate = $total_transactions > 0 ? ($successful_payments / $total
             <a href="admin_packages.php"><i class="fa-solid fa-box-archive"></i> Packages</a>
             <a href="admin_users.php"><i class="fa-solid fa-users"></i> Users</a>
             <a href="admin_bookings.php"><i class="fa-regular fa-calendar-check"></i> Bookings</a>
+            <a onclick="openEditAdminProfileModal()" title="Settings / Edit Profile"><i class="fa-solid fa-gear"></i></a>
             <a class="logout" onclick="openModal('modal-logout-confirmation')"><i class="fa-solid fa-arrow-right-from-bracket"></i> Log out</a>
         </div>
     </div>
 
     <div class="welcome-banner">
-        <h2>Welcome, Admin!</h2>
+        <h2 id="welcome-admin-heading">Welcome, <?php echo htmlspecialchars($admin_name); ?>!</h2>
         <p>Manage users, venues and generate reports.</p>
     </div>
 
@@ -829,41 +1020,50 @@ $payment_success_rate = $total_transactions > 0 ? ($successful_payments / $total
             </div>
         </div>
 
-        <div class="rating-overview">
+        <div class="rating-overview payment-two-by-two">
             <div class="rating-card-box">
-                <div class="label-text">Total Transactions</div>
+                <div class="label-text">Total Bookings</div>
                 <div class="main-value"><?php echo $total_transactions; ?></div>
             </div>
             <div class="rating-card-box">
-                <div class="label-text">Payment Success Rate</div>
-                <div class="main-value" style="color: #2f855a;"><?php echo number_format($payment_success_rate, 1); ?>%</div>
+                <div class="label-text">Paid</div>
+                <div class="main-value"><?php echo $successful_payments; ?></div>
             </div>
-        </div>
-
-        <div class="rating-distribution-title">Payment Status Overview</div>
-        <div class="rating-distribution-subtitle">Summary of payment statuses</div>
-
-        <div class="rating-row-item">
-            <div class="rating-star-label">Paid</div>
-            <div class="rating-bar-bg"><div class="rating-bar-fill" style="width: <?php echo $pct_paid; ?>%;"></div></div>
-            <div class="rating-count-value" style="width: 75px; text-align: right;"><?php echo $successful_payments; ?> payments</div>
-        </div>
-
-        <div class="rating-row-item">
-            <div class="rating-star-label">Pending</div>
-            <div class="rating-bar-bg"><div class="rating-bar-fill" style="width: <?php echo $pct_pending_status; ?>%; background: #d69e2e;"></div></div>
-            <div class="rating-count-value" style="width: 75px; text-align: right;"><?php echo $pending_status_count; ?> payments</div>
-        </div>
-
-        <div class="rating-row-item">
-            <div class="rating-star-label">Unpaid</div>
-            <div class="rating-bar-bg"><div class="rating-bar-fill" style="width: <?php echo $pct_failed; ?>%; background: #e53e3e;"></div></div>
-            <div class="rating-count-value" style="width: 75px; text-align: right;"><?php echo $failed_payments; ?> payments</div>
+            <div class="rating-card-box">
+                <div class="label-text">Pending</div>
+                <div class="main-value"><?php echo $pending_status_count; ?></div>
+            </div>
+            <div class="rating-card-box">
+                <div class="label-text">Unpaid</div>
+                <div class="main-value"><?php echo $unpaid_payments; ?></div>
+            </div>
         </div>
     </div>
 </div>
 
 <div class="toast-notification" id="toast-global"></div>
+
+<!-- MODAL: EDIT ADMIN PROFILE -->
+<div id="modal-edit-admin-profile" class="modal-overlay">
+    <div class="modal-box-edit-profile">
+        <h3>Edit Profile</h3>
+        <form id="form-edit-admin-profile" method="POST" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>">
+            <input type="hidden" name="action_type" value="update_admin_profile">
+            <div class="edit-profile-group">
+                <label>Name</label>
+                <input type="text" id="edit-admin-name" name="edit_admin_name" value="<?php echo htmlspecialchars($admin_name); ?>" required>
+            </div>
+            <div class="edit-profile-group">
+                <label>Phone Number</label>
+                <input type="tel" id="edit-admin-phone" name="edit_admin_phone" value="<?php echo htmlspecialchars($admin_phone); ?>">
+            </div>
+            <div class="edit-profile-actions">
+                <button type="submit" class="btn-save-profile">Save Changes</button>
+                <button type="button" class="btn-cancel" onclick="closeModal('modal-edit-admin-profile')">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
 
 <div id="modal-logout-confirmation" class="modal-overlay">
     <div class="modal-box">
@@ -878,6 +1078,14 @@ $payment_success_rate = $total_transactions > 0 ? ($successful_payments / $total
 <script>
     const databaseBookings = <?php echo json_encode($booking_data); ?>;
     const currentVenues = <?php echo json_encode($venues); ?>;
+    const adminNameVal = <?php echo json_encode($admin_name); ?>;
+    const adminPhoneVal = <?php echo json_encode($admin_phone); ?>;
+
+    function openEditAdminProfileModal() {
+        document.getElementById('edit-admin-name').value = adminNameVal;
+        document.getElementById('edit-admin-phone').value = adminPhoneVal;
+        document.getElementById('modal-edit-admin-profile').style.display = 'flex';
+    }
 
     function openModal(modalId) {
         document.getElementById(modalId).style.display = 'flex';
@@ -940,6 +1148,12 @@ $payment_success_rate = $total_transactions > 0 ? ($successful_payments / $total
             event.target.style.display = 'none';
         }
     }
+
+    window.addEventListener('DOMContentLoaded', () => {
+        <?php if (!empty($msg_toast)): ?>
+            triggerToast('<?php echo $msg_toast; ?>');
+        <?php endif; ?>
+    });
 </script>
 
 </body>

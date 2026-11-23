@@ -1,5 +1,89 @@
 <?php
+session_start();
 include('db_connection.php');
+
+$msg_toast = "";
+if (isset($_SESSION['toast_message'])) {
+    $msg_toast = $_SESSION['toast_message'];
+    unset($_SESSION['toast_message']);
+}
+
+// Kenal pasti jadual admin & kolum jika ada
+$admin_table = "";
+$admin_id_col = "";
+$admin_name_col = "";
+$admin_phone_col = "";
+
+$check_admin_tbl = mysqli_query($conn, "SHOW TABLES LIKE 'admin'");
+if ($check_admin_tbl && mysqli_num_rows($check_admin_tbl) > 0) {
+    $admin_table = "admin";
+    $cols_res = mysqli_query($conn, "SHOW COLUMNS FROM admin");
+    if ($cols_res) {
+        while ($c_row = mysqli_fetch_assoc($cols_res)) {
+            $field = $c_row['Field'];
+            if (stripos($field, 'id') !== false && $admin_id_col === "") $admin_id_col = $field;
+            if (stripos($field, 'name') !== false && $admin_name_col === "") $admin_name_col = $field;
+            if (stripos($field, 'phone') !== false || stripos($field, 'phonenum') !== false || stripos($field, 'tel') !== false) {
+                $admin_phone_col = $field;
+            }
+        }
+    }
+}
+
+// PROSES EDIT PROFILE ADMIN
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action_type']) && $_POST['action_type'] == 'update_admin_profile') {
+    $new_admin_name = trim($_POST['edit_admin_name']);
+    $new_admin_phone = trim($_POST['edit_admin_phone']);
+
+    if ($new_admin_name === '') {
+        $_SESSION['toast_message'] = "Please enter a name.";
+    } else {
+        $_SESSION['admin_profile_name'] = $new_admin_name;
+        $_SESSION['admin_profile_phone'] = $new_admin_phone;
+
+        if ($admin_table !== "" && $admin_name_col !== "") {
+            $esc_name = mysqli_real_escape_string($conn, $new_admin_name);
+            $esc_phone = mysqli_real_escape_string($conn, $new_admin_phone);
+            $set_parts = ["`$admin_name_col` = '$esc_name'"];
+            if ($admin_phone_col !== "") {
+                $set_parts[] = "`$admin_phone_col` = '$esc_phone'";
+            }
+            $where_clause = "";
+            if ($admin_id_col !== "" && isset($_SESSION['admin_id'])) {
+                $esc_id = mysqli_real_escape_string($conn, $_SESSION['admin_id']);
+                $where_clause = " WHERE `$admin_id_col` = '$esc_id'";
+            }
+            mysqli_query($conn, "UPDATE `$admin_table` SET " . implode(", ", $set_parts) . $where_clause);
+        }
+
+        $_SESSION['toast_message'] = "Profile updated successfully!";
+    }
+
+    header("Location: " . $_SERVER['PHP_SELF']);
+    exit();
+}
+
+$admin_name = isset($_SESSION['admin_profile_name']) && $_SESSION['admin_profile_name'] !== '' ? $_SESSION['admin_profile_name'] : "Admin";
+$admin_phone = isset($_SESSION['admin_profile_phone']) ? $_SESSION['admin_profile_phone'] : "";
+
+if ($admin_table !== "" && $admin_name_col !== "" && !isset($_SESSION['admin_profile_name'])) {
+    $select_cols = "`$admin_name_col`" . ($admin_phone_col !== "" ? ", `$admin_phone_col`" : "");
+    $where_clause = "";
+    if ($admin_id_col !== "" && isset($_SESSION['admin_id'])) {
+        $esc_id = mysqli_real_escape_string($conn, $_SESSION['admin_id']);
+        $where_clause = " WHERE `$admin_id_col` = '$esc_id'";
+    }
+    $adm_q = mysqli_query($conn, "SELECT $select_cols FROM `$admin_table` $where_clause LIMIT 1");
+    if ($adm_q && mysqli_num_rows($adm_q) > 0) {
+        $adm_row = mysqli_fetch_assoc($adm_q);
+        if (!empty($adm_row[$admin_name_col])) {
+            $admin_name = $adm_row[$admin_name_col];
+        }
+        if ($admin_phone_col !== "" && isset($adm_row[$admin_phone_col])) {
+            $admin_phone = $adm_row[$admin_phone_col];
+        }
+    }
+}
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action_admin'])) {
     $target_venue_id = mysqli_real_escape_string($conn, $_POST['venue_id']);
@@ -425,6 +509,80 @@ $result = mysqli_query($conn, $query);
         text-align: center;
     }
 
+    .modal-box-edit-profile {
+        background-color: var(--white);
+        width: 90%;
+        max-width: 480px;
+        border-radius: var(--radius-lg);
+        padding: 32px;
+        color: var(--text-dark);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        border: 1px solid var(--border-color);
+        animation: modalSlideUp 0.3s ease;
+        text-align: left;
+    }
+
+    .modal-box-edit-profile h3 {
+        font-family: 'Playfair Display', serif;
+        font-size: 24px;
+        font-weight: 600;
+        color: var(--primary-burgundy);
+        margin-bottom: 18px;
+    }
+
+    .edit-profile-group {
+        margin-bottom: 15px;
+    }
+
+    .edit-profile-group label {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-dark);
+        margin-bottom: 6px;
+    }
+
+    .edit-profile-group input {
+        width: 100%;
+        padding: 11px 14px;
+        border: 1.5px solid #e2e8f0;
+        border-radius: var(--radius-sm);
+        font-size: 13.5px;
+        background-color: var(--bg-page);
+        color: var(--text-dark);
+        transition: all 0.2s ease;
+    }
+
+    .edit-profile-group input:focus {
+        outline: none;
+        background-color: var(--white);
+        border-color: var(--primary-burgundy);
+        box-shadow: 0 0 0 3.5px rgba(122, 34, 79, 0.12);
+    }
+
+    .edit-profile-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 22px;
+    }
+
+    .btn-save-profile {
+        flex: 1;
+        background: linear-gradient(135deg, var(--primary-burgundy) 0%, var(--primary-dark) 100%);
+        color: var(--white);
+        border: none;
+        padding: 11px 20px;
+        font-size: 14px;
+        font-weight: 600;
+        border-radius: 30px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .btn-save-profile:hover {
+        background: linear-gradient(135deg, var(--primary-dark) 0%, #400d27 100%);
+    }
+
     @keyframes modalSlideUp {
         from { opacity: 0; transform: translateY(20px); }
         to { opacity: 1;
@@ -629,12 +787,13 @@ $result = mysqli_query($conn, $query);
             <a href="admin_packages.php"><i class="fa-solid fa-box-archive"></i> Packages</a>
             <a href="admin_users.php"><i class="fa-solid fa-users"></i> Users</a>
             <a href="admin_bookings.php"><i class="fa-regular fa-calendar-check"></i> Bookings</a>
+            <a onclick="openEditAdminProfileModal()" title="Settings / Edit Profile"><i class="fa-solid fa-gear"></i></a>
             <a class="logout" onclick="openModal('modal-logout-confirmation', this)"><i class="fa-solid fa-arrow-right-from-bracket"></i> Log out</a>
         </div>
     </div>
 
     <div class="welcome-banner">
-        <h2>Welcome, Admin!</h2>
+        <h2 id="welcome-admin-heading">Welcome, <?php echo htmlspecialchars($admin_name); ?>!</h2>
         <p>Manage users, venues and generate reports.</p>
     </div>
 
@@ -722,6 +881,28 @@ if ($venue_status == 'rejected') {
 
 <div class="toast-notification" id="toast-global"></div>
 
+<!-- MODAL: EDIT ADMIN PROFILE -->
+<div id="modal-edit-admin-profile" class="modal-overlay">
+    <div class="modal-box-edit-profile">
+        <h3>Edit Profile</h3>
+        <form id="form-edit-admin-profile" method="POST" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>">
+            <input type="hidden" name="action_type" value="update_admin_profile">
+            <div class="edit-profile-group">
+                <label>Name</label>
+                <input type="text" id="edit-admin-name" name="edit_admin_name" value="<?php echo htmlspecialchars($admin_name); ?>" required>
+            </div>
+            <div class="edit-profile-group">
+                <label>Phone Number</label>
+                <input type="tel" id="edit-admin-phone" name="edit_admin_phone" value="<?php echo htmlspecialchars($admin_phone); ?>">
+            </div>
+            <div class="edit-profile-actions">
+                <button type="submit" class="btn-save-profile">Save Changes</button>
+                <button type="button" class="btn-cancel" onclick="closeModal('modal-edit-admin-profile')">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <div id="modal-view-image" class="modal-overlay">
     <div class="modal-box-view-image">
         <h4 id="img-title">Venue Pictures</h4>
@@ -758,6 +939,15 @@ if ($venue_status == 'rejected') {
     let myBarChart = null; 
     let currentImages = [];
     let currentIdx = 0;
+    const adminNameVal = <?php echo json_encode($admin_name); ?>;
+    const adminPhoneVal = <?php echo json_encode($admin_phone); ?>;
+
+    function openEditAdminProfileModal() {
+        document.getElementById('edit-admin-name').value = adminNameVal;
+        document.getElementById('edit-admin-phone').value = adminPhoneVal;
+        document.getElementById('modal-edit-admin-profile').style.display = 'flex';
+    }
+
     function submitStatusForm(venueId, selectElement) {
         updateDropdownColor(selectElement);
         document.getElementById('form-status-' + venueId).submit();
@@ -928,6 +1118,12 @@ if ($venue_status == 'rejected') {
             triggerToast("<?php echo $toast_backend_message; ?>");
         });
     <?php endif; ?>
+
+    window.addEventListener('DOMContentLoaded', () => {
+        <?php if (!empty($msg_toast)): ?>
+            triggerToast('<?php echo $msg_toast; ?>');
+        <?php endif; ?>
+    });
 </script>
 
 </body>

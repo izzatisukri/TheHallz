@@ -8,12 +8,46 @@ if (!isset($_SESSION['owner_id'])) {
 }
 $owner_id = $_SESSION['owner_id'];
 
+// PROSES EDIT PROFILE VENUE OWNER
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] == 'update_owner_profile') {
+    $new_owner_name = mysqli_real_escape_string($conn, trim($_POST['edit_owner_name']));
+    $new_owner_phone = mysqli_real_escape_string($conn, trim($_POST['edit_owner_phone']));
+
+    if ($new_owner_name === '') {
+        $_SESSION['toast_message'] = "Please enter your name.";
+    } else {
+        $check_phone_col = mysqli_query($conn, "SHOW COLUMNS FROM venue_owner LIKE 'owner_phonenum'");
+        if ($check_phone_col && mysqli_num_rows($check_phone_col) > 0) {
+            $update_owner_sql = "UPDATE venue_owner 
+                                 SET owner_name = '$new_owner_name', owner_phonenum = '$new_owner_phone' 
+                                 WHERE owner_id = $owner_id";
+        } else {
+            $update_owner_sql = "UPDATE venue_owner 
+                                 SET owner_name = '$new_owner_name' 
+                                 WHERE owner_id = $owner_id";
+        }
+
+        if (mysqli_query($conn, $update_owner_sql)) {
+            $_SESSION['toast_message'] = "Profile Updated Successfully!";
+        } else {
+            $_SESSION['toast_message'] = "Error updating profile: " . mysqli_error($conn);
+        }
+    }
+
+    header("Location: " . $_SERVER['PHP_SELF']);
+    exit();
+}
+
 $owner_name = "Venue Owner";
-$owner_query = "SELECT owner_name FROM venue_owner WHERE owner_id = $owner_id LIMIT 1";
+$owner_phone = "";
+$owner_query = "SELECT * FROM venue_owner WHERE owner_id = $owner_id LIMIT 1";
 $owner_result = mysqli_query($conn, $owner_query);
 if ($owner_result && mysqli_num_rows($owner_result) > 0) {
     $owner_row = mysqli_fetch_assoc($owner_result);
     $owner_name = $owner_row['owner_name'];
+    if (isset($owner_row['owner_phonenum'])) {
+        $owner_phone = $owner_row['owner_phonenum'];
+    }
 }
 
 $toast_message = "";
@@ -530,13 +564,13 @@ if (isset($_SESSION['toast_message'])) {
             box-shadow: 0 0 0 3.5px rgba(122, 34, 79, 0.12);
         }
 
-    #filter-month, #filter-year, #filter-payment-month, #filter-payment-year {
-    color: #2d3748; 
-    }
+        #filter-month, #filter-year, #filter-payment-month, #filter-payment-year {
+            color: #2d3748; 
+        }
 
-    #filter-month option, #filter-year option, #filter-payment-month option, #filter-payment-year option {
-    color: #2d3748; 
-    }
+        #filter-month option, #filter-year option, #filter-payment-month option, #filter-payment-year option {
+            color: #2d3748; 
+        }
 
         .modal-overlay {
             position: fixed;
@@ -855,12 +889,13 @@ if (isset($_SESSION['toast_message'])) {
                 <a onclick="switchTab('packages')" id="tab-packages"><i class="fa-solid fa-box-archive"></i> Packages</a>
                 <a onclick="switchTab('bookings')" id="tab-bookings"><i class="fa-regular fa-calendar-check"></i> Bookings</a>
                 <a onclick="switchTab('payment')" id="tab-payment"><i class="fa-solid fa-credit-card"></i> Payment</a>
+                <a onclick="openEditOwnerProfileModal()" id="tab-settings" title="Settings / Edit Profile"><i class="fa-solid fa-gear"></i></a>
                 <a class="logout" onclick="openModal('modal-logout-confirmation')"><i class="fa-solid fa-arrow-right-from-bracket"></i> Log out</a>
             </div>
         </div>
 
         <div class="welcome-banner">
-            <h2>Welcome, <?php echo htmlspecialchars($owner_name); ?>!</h2>
+            <h2 id="welcome-owner-heading">Welcome, <?php echo htmlspecialchars($owner_name); ?>!</h2>
             <p>Manage your venues, packages, and view booking requests seamlessly.</p>
         </div>
 
@@ -1175,6 +1210,28 @@ if (isset($_SESSION['toast_message'])) {
 
     <div class="toast-notification" id="toast-global"></div>
 
+    <!-- MODAL: EDIT OWNER PROFILE -->
+    <div id="modal-edit-owner-profile" class="modal-overlay">
+        <div class="modal-box-add">
+            <h3>Edit Profile</h3>
+            <form id="form-edit-owner-profile" method="POST" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>">
+                <input type="hidden" name="action" value="update_owner_profile">
+                <div class="form-group">
+                    <label>Owner Name</label>
+                    <input type="text" id="edit-owner-name" name="edit_owner_name" value="<?php echo htmlspecialchars($owner_name); ?>" required>
+                </div>
+                <div class="form-group">
+                    <label>Phone Number</label>
+                    <input type="tel" id="edit-owner-phone" name="edit_owner_phone" value="<?php echo htmlspecialchars($owner_phone); ?>">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" onclick="closeModal('modal-edit-owner-profile')">Cancel</button>
+                    <button type="submit" class="btn-submit">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <div id="modal-view-image" class="modal-overlay">
         <div class="modal-box-view-image">
             <h3 id="gallery-title" style="margin-bottom: 15px; font-weight: 600; color: var(--primary-burgundy); font-family: 'Playfair Display', serif;">Image View</h3>
@@ -1369,6 +1426,14 @@ if (isset($_SESSION['toast_message'])) {
         let rowToEdit = null;
         let currentGallery = [];
         let currentIndex = 0;
+        const ownerNameVal = <?php echo json_encode($owner_name); ?>;
+        const ownerPhoneVal = <?php echo json_encode($owner_phone); ?>;
+
+        function openEditOwnerProfileModal() {
+            document.getElementById('edit-owner-name').value = ownerNameVal;
+            document.getElementById('edit-owner-phone').value = ownerPhoneVal;
+            document.getElementById('modal-edit-owner-profile').style.display = 'flex';
+        }
 
         window.onload = function() {
             const dropdowns = document.querySelectorAll('.select-status');

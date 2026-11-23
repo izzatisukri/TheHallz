@@ -9,6 +9,28 @@ if (!isset($_SESSION['client_id'])) {
 
 $client_id = $_SESSION['client_id'];
 
+// PROSES EDIT PROFILE (Simpan perubahan nama & phone number ke jadual client)
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type']) && $_POST['action_type'] == 'update_profile') {
+    $new_client_name = mysqli_real_escape_string($conn, trim($_POST['edit_client_name']));
+    $new_client_phone = mysqli_real_escape_string($conn, trim($_POST['edit_client_phone']));
+
+    if ($new_client_name === '' || $new_client_phone === '') {
+        $_SESSION['toast_message'] = "Please fill in both Full Name and Phone Number.";
+    } else {
+        $update_profile_query = "UPDATE client 
+                                 SET client_name = '$new_client_name', client_phonenum = '$new_client_phone' 
+                                 WHERE client_id = '$client_id'";
+        if (mysqli_query($conn, $update_profile_query)) {
+            $_SESSION['toast_message'] = "Profile updated successfully!";
+        } else {
+            $_SESSION['toast_message'] = "Error updating profile: " . mysqli_error($conn);
+        }
+    }
+
+    header("Location: " . $_SERVER['PHP_SELF']);
+    exit();
+}
+
 $client_name = "User";
 $client_phone = "";
 $client_email = "";
@@ -1132,6 +1154,7 @@ if ($all_ratings_res) {
                 <a id="nav-home" class="active" onclick="switchTab('home')"><i class="fa-solid fa-house"></i> Home</a>
                 <a id="nav-bookings" onclick="openMyBookingsModal()"><i class="fa-regular fa-calendar-check"></i> My Bookings</a>
                 <a id="nav-payment" onclick="openMyPaymentModal()"><i class="fa-solid fa-credit-card"></i> My Payment</a>
+                <a id="nav-settings" onclick="openEditProfileModal()" title="Settings / Edit Profile"><i class="fa-solid fa-gear"></i></a>
                 <a class="logout" onclick="openLogoutModal()"><i class="fa-solid fa-arrow-right-from-bracket"></i> Log out</a>
             </div>
         </div>
@@ -1139,7 +1162,7 @@ if ($all_ratings_res) {
         <!-- WELCOME BANNER -->
         <div class="welcome-banner">
             <div class="welcome-text">
-                <h2>Welcome, <?php echo htmlspecialchars($client_name); ?>!</h2>
+                <h2 id="welcome-client-heading">Welcome, <?php echo htmlspecialchars($client_name); ?>!</h2>
                 <p>Find your perfect wedding venues!</p>
             </div>
         </div>
@@ -1254,6 +1277,37 @@ if ($all_ratings_res) {
             <i class="fa-solid fa-circle-check fa-lg"></i>
         </div>
         <span>Booking confirmed!</span>
+    </div>
+
+    <!-- MODAL: EDIT PROFILE -->
+    <div id="modal-edit-profile" class="modal-overlay">
+        <div class="modal-box-booking-new">
+            <h3 class="modal-main-title">Edit Profile</h3>
+
+            <div class="modal-venue-info">
+                <h4>Account Settings</h4>
+                <p>Email: <?php echo htmlspecialchars($client_email); ?></p>
+            </div>
+
+            <form id="form-edit-profile" method="POST" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>">
+                <input type="hidden" name="action_type" value="update_profile">
+
+                <div class="form-group-new">
+                    <label>Full Name</label>
+                    <input type="text" id="edit-client-name" name="edit_client_name" value="<?php echo htmlspecialchars($client_name); ?>" required>
+                </div>
+
+                <div class="form-group-new">
+                    <label>Phone Number</label>
+                    <input type="tel" id="edit-client-phone" name="edit_client_phone" value="<?php echo htmlspecialchars($client_phone); ?>" required>
+                </div>
+
+                <div class="form-actions-new">
+                    <button type="submit" class="btn-action btn-book-now">Save Changes</button>
+                    <button type="button" class="btn-action btn-cancel-new" onclick="closeModal('modal-edit-profile')">Cancel</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <!-- MODAL: BOOKING FORM -->
@@ -1397,9 +1451,16 @@ if ($all_ratings_res) {
         const venueRatingBreakdown = <?php echo json_encode($db_venue_rating_breakdown); ?>;
         const hasRatedVenue = <?php echo json_encode($db_has_rated_venue); ?>;
         const clientName = <?php echo json_encode($client_name); ?>;
+        const clientPhone = <?php echo json_encode($client_phone); ?>;
 
         let currentPackageFilter = 'all';
         let currentAreaFilter = '';
+
+        function openEditProfileModal() {
+            document.getElementById('edit-client-name').value = clientName;
+            document.getElementById('edit-client-phone').value = clientPhone;
+            document.getElementById('modal-edit-profile').style.display = 'flex';
+        }
 
         function switchTab(tabType) {
             const homeNav = document.getElementById('nav-home');
@@ -1783,6 +1844,10 @@ if ($all_ratings_res) {
                     <div class="receipt-row">
                         <span>Customer Name:</span>
                         <strong>${clientName}</strong>
+                    </div>
+                    <div class="receipt-row">
+                        <span>Phone Number:</span>
+                        <strong>${clientPhone}</strong>
                     </div>
                     <div class="receipt-row">
                         <span>Venue Name:</span>

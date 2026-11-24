@@ -40,6 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
 
 $owner_name = "Venue Owner";
 $owner_phone = "";
+$owner_email = "";
 $owner_query = "SELECT * FROM venue_owner WHERE owner_id = $owner_id LIMIT 1";
 $owner_result = mysqli_query($conn, $owner_query);
 if ($owner_result && mysqli_num_rows($owner_result) > 0) {
@@ -47,6 +48,11 @@ if ($owner_result && mysqli_num_rows($owner_result) > 0) {
     $owner_name = $owner_row['owner_name'];
     if (isset($owner_row['owner_phonenum'])) {
         $owner_phone = $owner_row['owner_phonenum'];
+    }
+    if (isset($owner_row['owner_email'])) {
+        $owner_email = $owner_row['owner_email'];
+    } elseif (isset($owner_row['email'])) {
+        $owner_email = $owner_row['email'];
     }
 }
 
@@ -634,6 +640,28 @@ if (isset($_SESSION['toast_message'])) {
             font-family: 'Playfair Display', serif;
         }
 
+        .account-settings-box {
+            background-color: #fcebf1;
+            border-left: 4px solid #6b143e;
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 20px;
+        }
+
+        .account-settings-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 17px;
+            font-weight: 700;
+            color: #6b143e;
+            margin-bottom: 4px;
+        }
+
+        .account-settings-email {
+            font-size: 13.5px;
+            color: #64748b;
+            font-weight: 500;
+        }
+
         .rating-bar-container {
             display: flex;
             align-items: center;
@@ -735,6 +763,20 @@ if (isset($_SESSION['toast_message'])) {
             justify-content: flex-end;
             gap: 12px;
             margin-top: 25px;
+        }
+
+        .profile-form-actions {
+            display: flex;
+            gap: 14px;
+            margin-top: 24px;
+        }
+
+        .profile-form-actions .btn-submit,
+        .profile-form-actions .btn-cancel {
+            flex: 1;
+            border-radius: 12px;
+            padding: 13px 20px;
+            font-size: 14.5px;
         }
 
         .btn-submit {
@@ -1214,19 +1256,23 @@ if (isset($_SESSION['toast_message'])) {
     <div id="modal-edit-owner-profile" class="modal-overlay">
         <div class="modal-box-add">
             <h3>Edit Profile</h3>
+            <div class="account-settings-box">
+                <div class="account-settings-title">Account Settings</div>
+                <div class="account-settings-email">Email: <?php echo htmlspecialchars($owner_email !== '' ? $owner_email : 'owner@thehallz.com'); ?></div>
+            </div>
             <form id="form-edit-owner-profile" method="POST" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>">
                 <input type="hidden" name="action" value="update_owner_profile">
                 <div class="form-group">
-                    <label>Owner Name</label>
+                    <label>Full Name</label>
                     <input type="text" id="edit-owner-name" name="edit_owner_name" value="<?php echo htmlspecialchars($owner_name); ?>" required>
                 </div>
                 <div class="form-group">
                     <label>Phone Number</label>
                     <input type="tel" id="edit-owner-phone" name="edit_owner_phone" value="<?php echo htmlspecialchars($owner_phone); ?>">
                 </div>
-                <div class="form-actions">
-                    <button type="button" class="btn-cancel" onclick="closeModal('modal-edit-owner-profile')">Cancel</button>
+                <div class="profile-form-actions">
                     <button type="submit" class="btn-submit">Save Changes</button>
+                    <button type="button" class="btn-cancel" onclick="closeModal('modal-edit-owner-profile')">Cancel</button>
                 </div>
             </form>
         </div>

@@ -13,6 +13,7 @@ $admin_table = "";
 $admin_id_col = "";
 $admin_name_col = "";
 $admin_phone_col = "";
+$admin_email_col = "";
 
 $check_admin_tbl = mysqli_query($conn, "SHOW TABLES LIKE 'admin'");
 if ($check_admin_tbl && mysqli_num_rows($check_admin_tbl) > 0) {
@@ -25,6 +26,9 @@ if ($check_admin_tbl && mysqli_num_rows($check_admin_tbl) > 0) {
             if (stripos($field, 'name') !== false && $admin_name_col === "") $admin_name_col = $field;
             if (stripos($field, 'phone') !== false || stripos($field, 'phonenum') !== false || stripos($field, 'tel') !== false) {
                 $admin_phone_col = $field;
+            }
+            if (stripos($field, 'email') !== false && $admin_email_col === "") {
+                $admin_email_col = $field;
             }
         }
     }
@@ -65,9 +69,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_type']) && $_P
 
 $admin_name = isset($_SESSION['admin_profile_name']) && $_SESSION['admin_profile_name'] !== '' ? $_SESSION['admin_profile_name'] : "Admin";
 $admin_phone = isset($_SESSION['admin_profile_phone']) ? $_SESSION['admin_profile_phone'] : "";
+$admin_email = isset($_SESSION['admin_profile_email']) ? $_SESSION['admin_profile_email'] : "";
 
-if ($admin_table !== "" && $admin_name_col !== "" && !isset($_SESSION['admin_profile_name'])) {
-    $select_cols = "`$admin_name_col`" . ($admin_phone_col !== "" ? ", `$admin_phone_col`" : "");
+if ($admin_table !== "" && $admin_name_col !== "") {
+    $select_cols = "`$admin_name_col`"
+        . ($admin_phone_col !== "" ? ", `$admin_phone_col`" : "")
+        . ($admin_email_col !== "" ? ", `$admin_email_col`" : "");
     $where_clause = "";
     if ($admin_id_col !== "" && isset($_SESSION['admin_id'])) {
         $esc_id = mysqli_real_escape_string($conn, $_SESSION['admin_id']);
@@ -76,11 +83,14 @@ if ($admin_table !== "" && $admin_name_col !== "" && !isset($_SESSION['admin_pro
     $adm_q = mysqli_query($conn, "SELECT $select_cols FROM `$admin_table` $where_clause LIMIT 1");
     if ($adm_q && mysqli_num_rows($adm_q) > 0) {
         $adm_row = mysqli_fetch_assoc($adm_q);
-        if (!empty($adm_row[$admin_name_col])) {
+        if (!isset($_SESSION['admin_profile_name']) && !empty($adm_row[$admin_name_col])) {
             $admin_name = $adm_row[$admin_name_col];
         }
-        if ($admin_phone_col !== "" && isset($adm_row[$admin_phone_col])) {
+        if (!isset($_SESSION['admin_profile_phone']) && $admin_phone_col !== "" && isset($adm_row[$admin_phone_col])) {
             $admin_phone = $adm_row[$admin_phone_col];
+        }
+        if ($admin_email_col !== "" && isset($adm_row[$admin_email_col])) {
+            $admin_email = $adm_row[$admin_email_col];
         }
     }
 }
@@ -578,7 +588,7 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
             width: 90%;
             max-width: 480px;
             border-radius: var(--radius-lg);
-            padding: 32px;
+            padding: 34px;
             color: var(--text-dark);
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
             border: 1px solid var(--border-color);
@@ -588,30 +598,52 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
 
         .modal-box-edit-profile h3 {
             font-family: 'Playfair Display', serif;
-            font-size: 24px;
-            font-weight: 600;
-            color: var(--primary-burgundy);
-            margin-bottom: 18px;
+            font-size: 28px;
+            font-weight: 700;
+            color: #6b143e;
+            margin-bottom: 20px;
+        }
+
+        .account-settings-box {
+            background-color: #fcebf1;
+            border-left: 4px solid #6b143e;
+            border-radius: 12px;
+            padding: 15px 18px;
+            margin-bottom: 20px;
+        }
+
+        .account-settings-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 17px;
+            font-weight: 700;
+            color: #6b143e;
+            margin-bottom: 4px;
+        }
+
+        .account-settings-email {
+            font-size: 13.5px;
+            color: #64748b;
+            font-weight: 500;
         }
 
         .edit-profile-group {
-            margin-bottom: 15px;
+            margin-bottom: 16px;
         }
 
         .edit-profile-group label {
             display: block;
-            font-size: 13px;
+            font-size: 13.5px;
             font-weight: 600;
             color: var(--text-dark);
-            margin-bottom: 6px;
+            margin-bottom: 7px;
         }
 
         .edit-profile-group input {
             width: 100%;
-            padding: 11px 14px;
+            padding: 12px 15px;
             border: 1.5px solid #e2e8f0;
-            border-radius: var(--radius-sm);
-            font-size: 13.5px;
+            border-radius: 12px;
+            font-size: 14px;
             background-color: var(--bg-page);
             color: var(--text-dark);
             transition: all 0.2s ease;
@@ -626,25 +658,42 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
 
         .edit-profile-actions {
             display: flex;
-            gap: 12px;
-            margin-top: 22px;
+            gap: 14px;
+            margin-top: 24px;
         }
 
         .btn-save-profile {
             flex: 1;
-            background: linear-gradient(135deg, var(--primary-burgundy) 0%, var(--primary-dark) 100%);
+            background: #6b143e;
             color: var(--white);
             border: none;
-            padding: 11px 20px;
-            font-size: 14px;
+            padding: 12px 20px;
+            font-size: 14.5px;
             font-weight: 600;
-            border-radius: 30px;
+            border-radius: 12px;
             cursor: pointer;
             transition: all 0.2s ease;
         }
 
         .btn-save-profile:hover {
-            background: linear-gradient(135deg, var(--primary-dark) 0%, #400d27 100%);
+            background: var(--primary-dark);
+        }
+
+        .btn-profile-cancel {
+            flex: 1;
+            background-color: #e6ebf0;
+            color: #1e293b;
+            border: none;
+            padding: 12px 20px;
+            font-size: 14.5px;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-profile-cancel:hover {
+            background-color: #d8dee6;
         }
 
         @keyframes modalSlideUp {
@@ -841,10 +890,14 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
     <div id="modal-edit-admin-profile" class="modal-overlay">
         <div class="modal-box-edit-profile">
             <h3>Edit Profile</h3>
+            <div class="account-settings-box">
+                <div class="account-settings-title">Account Settings</div>
+                <div class="account-settings-email">Email: <?php echo htmlspecialchars($admin_email !== '' ? $admin_email : 'admin@thehallz.com'); ?></div>
+            </div>
             <form id="form-edit-admin-profile" method="POST" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>">
                 <input type="hidden" name="action_type" value="update_admin_profile">
                 <div class="edit-profile-group">
-                    <label>Name</label>
+                    <label>Full Name</label>
                     <input type="text" id="edit-admin-name" name="edit_admin_name" value="<?php echo htmlspecialchars($admin_name); ?>" required>
                 </div>
                 <div class="edit-profile-group">
@@ -853,7 +906,7 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
                 </div>
                 <div class="edit-profile-actions">
                     <button type="submit" class="btn-save-profile">Save Changes</button>
-                    <button type="button" class="btn-cancel" onclick="closeModal('modal-edit-admin-profile')">Cancel</button>
+                    <button type="button" class="btn-profile-cancel" onclick="closeModal('modal-edit-admin-profile')">Cancel</button>
                 </div>
             </form>
         </div>
